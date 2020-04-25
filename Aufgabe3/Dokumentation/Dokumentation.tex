@@ -1,0 +1,1475 @@
+\documentclass[a4paper,10pt,ngerman]{scrartcl}
+\usepackage{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[a4paper,margin=2.5cm,footskip=0.5cm]{geometry}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{latexsym}
+\usepackage{eurosym}
+
+\usepackage{tikz}
+\usepackage{tkz-euclide}
+\usepackage{tikz-qtree}
+\usetikzlibrary{arrows, shapes.geometric, angles, quotes, calc, patterns, babel}
+
+% Die naechsten drei Felder bitte anpassen:
+\newcommand{\Aufgabe}{Aufgabe 3: Abbiegen?} % Aufgabennummer und Aufgabennamen angeben
+\newcommand{\TeilnahmeId}{9693}             % Teilnahme-Id angeben
+\newcommand{\Namen}{Nick Djerfi}            % Namen der Bearbeiter/-innen dieser Aufgabe angeben
+
+% Kopf- und Fußzeilen
+\usepackage{scrlayer-scrpage, lastpage}
+\setkomafont{pageheadfoot}{\large\textrm}
+\lohead{\Aufgabe}
+\rohead{Teilnahme-Id: \TeilnahmeId}
+\cfoot*{\thepage{}/\pageref{LastPage}}
+
+% Position des Titels
+\usepackage{titling}
+\setlength{\droptitle}{-1.0cm}
+
+% Für mathematische Befehle und Symbole
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Für Bilder
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{multirow}
+
+% Für Algorithmen
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tabularx}
+
+% Für Quelltext
+\usepackage{listings}
+\usepackage{color}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{myviolet}{rgb}{0.67,0.0,0.29}
+\lstset{
+  keywordstyle=\color{blue},commentstyle=\color{mygreen},
+  stringstyle=\color{mymauve},rulecolor=\color{black},
+  basicstyle=\footnotesize\ttfamily,numberstyle=\tiny\color{mygray},
+  captionpos=b, % sets the caption-position to bottom
+  keepspaces=true, % keeps spaces in text
+  numbers=left, numbersep=5pt, showspaces=false,showstringspaces=true,
+  showtabs=false, stepnumber=2, tabsize=2,
+  language=C++,
+  extendedchars=true,
+  literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+}
+\lstdefinelanguage{JavaScript}{ % JavaScript ist als einzige Sprache noch nicht vordefiniert
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, finally, for, function, if, in, instanceof, new, return, switch, this, throw, try, typeof, var, void, while, with},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstdefinelanguage{bash}{
+  morekeywords={\$},
+  emph={time},
+  emphstyle={\color{myviolet}},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstset{
+  morekeywords={uint32_t, int32_t}
+}
+
+\lstset{emph={
+  std
+  },emphstyle={\color{myviolet}}
+}
+
+\newcommand{\abbref}[1]{
+  siehe Abb. \ref{#1}
+}
+
+\newcommand*\rfrac[2]{{}^{#1}\!/_{#2}}
+
+\newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
+
+% Diese beiden Pakete müssen zuletzt geladen werden
+%\usepackage{hyperref} % Anklickbare Links im Dokument
+\usepackage{cleveref}
+
+% Daten für die Titelseite
+\title{\textbf{\Huge\Aufgabe}}
+\author{\LARGE Teilnahme-Id: \LARGE \TeilnahmeId \\\\
+	    \LARGE Bearbeiter/-in dieser Aufgabe: \\ 
+	    \LARGE \Namen\\\\}
+\date{\LARGE\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Lösungsidee}
+Das Problem kann man als Graphen sehen, auf dem man den kürzesten Pfad berechnen muss.
+Der Algorithmus benutzt für die Berechnung zwei Pathfinding Algorithmen. Einmal wird der allgemein kürzeste Pfad berechnet und
+dannach wird der optimale Pfad mit den wenigsten Kurven berechnet.
+
+\subsection{Kürzester Pfad}
+Damit man weiß, wie lang ein berechneter Pfad maximal sein kann wird zuerst der Dijkstra Algorithmus verwendet, bei dem das
+Gewicht einer Kante durch ihre Länge gegeben ist. Dies gibt den allgemein kürzesten Pfad aus, von dem man die maximale
+Länge mit der gegebenen Verlängerung berechnen kann.
+
+\subsection{Optimaler Pfad}
+Wenn man nun die Minimierung der Kurvenanzahl als Ziel setzt, stößt man mit dem Dijkstra Algorithmus auf ein Problem. Das Gewicht
+einer Kante ist nun abhängig vom zuvor besuchten Knoten. (\abbref{fig:dynamicweight})
+Dies macht den zuvor statischen Graphen zu einem dynamischen, auf dem der Dijkstra Algorithmus nicht den optimalen Pfad findet.
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=1.25]
+    \node [circle, draw] (p1) at (0, 0) {};
+    \node [circle, draw] (p2) at (1, 0) {};
+    \node [circle, draw] (c) at (1, 1) {};
+    \node [circle, draw] (n) at (1, 2) {};
+    
+    \draw [->, ultra thick, blue] plot [smooth, tension=0.5] coordinates { ([yshift=5pt]p1) ([xshift=-0.3cm]c) ([xshift=-5pt]n) } node [left, xshift=-4pt] {Gewicht = 1};
+    \draw [->, ultra thick, red] plot [smooth, tension=0] coordinates { ([xshift=6pt]p2) ([xshift=6pt]n) } node [right, xshift=5pt] {Gewicht = 0};
+    \draw [ultra thick, blue] (p1) -- (c);
+    \draw [ultra thick, red] (p2) -- (c);
+    \draw [ultra thick] (c) -- (n);
+
+  \end{tikzpicture}
+  \caption{Dynamisches Kantengewicht}
+  \label{fig:dynamicweight}
+\end{figure}
+
+\subsubsection{Problem mit üblichen Pathfinding Algorithmen}
+Mit üblichen Pathfinding Algorithmen, wie Dijkstra, BFS, Bellman-Ford, usw., kommt man aufgrund der Dynamik des Graphen auf falsche Lösungen.
+Das Problem liegt darin, dass jeder Knoten nur einmal besucht wird. Dadurch kann es vorkommen, dass der Algorithmus einen Pfad wählt, der
+mit der nächsten Kante eine weitere Kurve hat und somit um eine Kurve zum falschen Ergebnis kommt. Das folgende Beispiel erläutert dies anhand
+des Dijkstra Algorithmus.
+
+In Abbildung \ref{fig:dijkstrafalse} kommt das Problem am rot markierten Knoten auf. Zuerst wird dieser vom Knoten darüber links
+auf eine Distanz von 1 gesetzt. Daraufhin wird der nächste Knoten links besucht, aber der Vorgänger des markierten Knoten nicht erneuert, da ebenfalls eine
+Distanz von 1 berechnet wird. Letzenendlich wird am Zielknoten eine Distanz von 2 berechnet,
+da der Vorgänger des markierten Knoten zur Berechnung des Winkels herangezogen wird.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 1) {0};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (c) at (0, 0) {0};
+      \node [ultra thick, circle, draw, red, fill=white!60!gray] (d) at (1, 0) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {\(\infty\)};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+
+      \draw [ultra thick] (c) -- (d);
+      \draw [ultra thick] (d) -- (e);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 1) {0};
+      \node [ultra thick, circle, draw, fill=gray] (c) at (0, 0) {0};
+      \node [ultra thick, circle, draw, red, fill=white!60!gray] (d) at (1, 0) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {\(\infty\)};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+
+      \draw [ultra thick] (c) -- node[pos=0.5] {\textbf{X}} node[below, yshift=-2pt] {1} (d);
+      \draw [ultra thick] (d) -- (e);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 1) {0};
+      \node [ultra thick, circle, draw, fill=gray] (c) at (0, 0) {0};
+      \node [ultra thick, circle, draw, red, fill=gray] (d) at (1, 0) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {2};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+      \draw [->, ultra thick] (e) -- node[above] {1} (d);
+
+      \draw [ultra thick] (c) -- node[pos=0.5] {\textbf{X}} node[below, yshift=-2pt] {1} (d);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node () at (0, 2) {Legende:};
+      \node [ultra thick, circle, draw, fill=gray, label={0:besucht}] () at (0, 1.5) {x};
+      \node [ultra thick, circle, draw, fill=white!60!gray, label={0:unbesucht}] () at (0, 1) {x};
+
+      \draw [<-, ultra thick] (-0.5, 0.5) -- node[right, xshift=12pt] {Vorgänger von} ++(0.75, 0);
+      \draw [ultra thick] (-0.5, 0) -- node[pos=0.5] {\textbf{X}} node[right, xshift=12pt] {ignorierte Kante} ++(0.75, 0);
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Dijkstra falsches Ergebnis}
+  \label{fig:dijkstrafalse}
+\end{figure}
+
+In Abbildung \ref{fig:dijkstraright} hingegen kommt der Dijkstra Algorithmus auf das richtige Ergebnis.
+Hier wird, durch Verschieben des Zielknotens, der gewählte Pfad zum richtigen.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 3) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (c) at (0, 1) {0};
+      \node [ultra thick, circle, draw, red, fill=white!60!gray] (d) at (1, 1) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {\(\infty\)};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+
+      \draw [ultra thick] (c) -- (d);
+      \draw [ultra thick] (d) -- (e);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 3) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=gray] (c) at (0, 1) {0};
+      \node [ultra thick, circle, draw, red, fill=white!60!gray] (d) at (1, 1) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {\(\infty\)};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+
+      \draw [ultra thick] (c) -- node[pos=0.5] {\textbf{X}} node[below, yshift=-2pt] {1} (d);
+      \draw [ultra thick] (d) -- (e);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node [ultra thick, circle, draw, fill=gray] (a) at (0, 3) {0};
+      \node [ultra thick, circle, draw, fill=gray] (b) at (0, 2) {0};
+      \node [ultra thick, circle, draw, fill=gray] (c) at (0, 1) {0};
+      \node [ultra thick, circle, draw, red, fill=gray] (d) at (1, 1) {1};
+      \node [ultra thick, circle, draw, fill=white!60!gray] (e) at (2, 0) {1};
+
+      \draw [->, ultra thick] (b) -- node[left] {0} (a);
+      \draw [->, ultra thick] (c) -- node[left] {0} (b);
+      \draw [->, ultra thick] (d) -- node[above] {1} (b);
+      \draw [->, ultra thick] (e) -- node[above] {0} (d);
+
+      \draw [ultra thick] (c) -- node[pos=0.5] {\textbf{X}} node[below, yshift=-2pt] {1} (d);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25]
+      \node () at (0, 2) {Legende:};
+      \node [ultra thick, circle, draw, fill=gray, label={0:besucht}] () at (0, 1.5) {x};
+      \node [ultra thick, circle, draw, fill=white!60!gray, label={0:unbesucht}] () at (0, 1) {x};
+
+      \draw [<-, ultra thick] (-0.5, 0.5) -- node[right, xshift=12pt] {Vorgänger von} ++(0.75, 0);
+      \draw [ultra thick] (-0.5, 0) -- node[pos=0.5] {\textbf{X}} node[right, xshift=12pt] {ignorierte Kante} ++(0.75, 0);
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Dijkstra richtiges Ergebnis}
+  \label{fig:dijkstraright}
+\end{figure}
+
+\subsubsection{Kurvenbestimmung}
+Ob eine Kante eine Kurve bildet kann berechnet werden, indem man die zuvor begangene Kante hinzunimmt, um drei Punkte zu erhalten.
+
+$$
+\vec{a} = \begin{bmatrix}
+  x_a \\ y_a
+\end{bmatrix};
+\vec{b} = \begin{bmatrix}
+  x_b \\ y_b
+\end{bmatrix};
+\vec{c} = \begin{bmatrix}
+  x_c \\ y_c
+\end{bmatrix}
+$$
+
+Nun nimmt man einen dieser Punkte als Zentrum und bildet beide Vektoren zwischen den Punkten und dem Zentrum.
+
+$$
+\overrightarrow{AB} = \vec{b} - \vec{a} = \begin{bmatrix}
+  x_b - x_a \\ y_b - y_a
+\end{bmatrix};
+\overrightarrow{AC} = \vec{c} - \vec{a} = \begin{bmatrix}
+  x_c - x_a \\ y_c - y_a
+\end{bmatrix}
+$$
+
+Das Kreuzprodukt der beiden Vektoren ergibt 0 wenn die Punkte kollinear sind, also keine Kurve bilden.
+
+$$
+\overrightarrow{AB} \times \overrightarrow{AC} = \vec{0}
+$$
+
+$$
+(x_b - x_a)(y_c - y_a) - (y_b - y_a)(x_c - x_a) = 0
+$$
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \coordinate (A) at (2, 0);
+    \coordinate (B) at (0, 1);
+    \coordinate (C) at (4, 1);
+
+    \filldraw (A) circle (2pt) node[below] {A};
+    \filldraw (B) circle (2pt) node[below] {B};
+    \filldraw (C) circle (2pt) node[below] {C};
+
+    \draw [->, ultra thick] (A) -- node[above, sloped] {$\overrightarrow{AB}$} (B);
+    \draw [->, ultra thick] (A) -- node[above, sloped] {$\overrightarrow{AC}$} (C);
+
+    \pic [draw, <->] {angle = C--A--B};
+  \end{tikzpicture}
+  \caption{Kurvenbestimmung}
+\end{figure}
+
+\subsection{Pathfinding Algorithmus}
+Um das zuvor genannte Problem zu beheben, braucht man einen Algorithmus, der Knoten mehrmals besuchen kann. Dazu dient ein modifizierter Dijkstra Algorithmus,
+der nicht die Knoten abspeichert, sondern die Pfade. In einer Warteschlange wird dann jeder Knoten zusammen mit dem bisherigen Pfad als
+``Arbeiter'' abgearbeitet. Damit am Ende der Arbeiter mit dem optimalen Pfad zuerst das Ziel erreicht ist die Warteschlange eine Prioritätswarteschlange,
+sortiert nach der Gesamtkurvenanzahl der Arbeiter. Somit wird immer der Arbeiter mit den wenigsten Kurven ausgesucht. Dies gibt die optimale Lösung, da
+der Graph keine negativen Kantengewichte enthält und somit die Kurvenanzahl nie weniger als die des ersten Arbeiters in der Prioritätswarteschlange werden kann.
+
+In Abbildung \ref{fig:modbfs} entspringen dem ersten Arbeiter zwei neue Arbeiter. Einer geht zum Knoten darüber und hat eine Gesamtkurvenanzahl von 0. Der andere
+geht zum Knoten rechts und hat eine Gesamtkurvenanzahl von 1. Damit ist der obere Arbeiter in der Prioritätswarteschlange auf Index 0 und der rechte auf Index 1.
+Wenn der nächste Arbeiter von der Warteschlange genommen wird, entspringen dem nun ein Arbeiter beim Knoten darüber rechts und ein Arbeiter an der selben Stelle wie
+der vorige. Man sieht hier, dass der Algorithmus Knoten öfters besuchen kann, da ein Knoten unter zwei verschiedenen Pfaden in der Prioritätswarteschlange liegt.
+Da nun alle Knoten die gleiche Gesamtkurvenanzahl haben wird einfach der erste aus der Warteschlange genommen und wieder neue Arbeiter generiert. Wenn nun der oberste
+Knoten der Zielknoten ist, wird mit dem vierten Arbeiter die Suche abgebrochen und der Pfad des Arbeiters zurückgegeben.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.2\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=gray] (a) at (0, 0) {};
+      \node [state, fill=white!25!blue] (b) at (0, 1) {};
+      \node [state, fill=white!40!gray, label=center:0] (c) at (0, 2) {};
+      \node [state, fill=white!40!gray, label=center:1] (d) at (1, 1) {};
+      \node [state] (f) at (1, 3) {};
+      \node [state] (g) at (2, 2) {};
+
+      \draw [->, ultra thick] (a) -- (b);
+      \draw [->, ultra thick, dashed] (b) -- node[left] {0} (c);
+      \draw [->, ultra thick, dashed] (b) -- node[below] {1} (d);
+
+      \draw [thick] (c) -- (d);
+      \draw [thick] (c) -- (f);
+      \draw [thick] (d) -- (g);
+    \end{tikzpicture}
+    \caption{Erster Arbeiter}
+  \end{subfigure}%
+  \begin{subfigure} {0.2\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.25, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=gray] (a) at (0, 0) {};
+      \node [state, fill=gray] (b) at (0, 1) {};
+      \node [state, fill=white!25!blue] (c) at (0, 2) {};
+      \node [state, fill=white!40!gray, label=center:0;2] (d) at (1, 1) {};
+      \node [state, fill=white!40!gray, label=center:1] (f) at (1, 3) {};
+      \node [state] (g) at (2, 2) {};
+
+      \draw [->, ultra thick] (a) -- (b);
+      \draw [->, ultra thick] (b) -- (c);
+      \draw [->, ultra thick, dashed] (b) -- node[below] {1} (d);
+
+      \draw [->, ultra thick, dashed] (c) -- node[above, sloped] {1} (d);
+      \draw [->, ultra thick, dashed] (c) -- node[above, sloped] {1} (f);
+      \draw [thick] (d) -- (g);
+    \end{tikzpicture}
+    \caption{Zweiter Arbeiter}
+  \end{subfigure}%
+  \begin{subfigure} {0.2\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=gray] (a) at (0, 0) {};
+      \node [state, fill=gray] (b) at (0, 1) {};
+      \node [state, fill=white!40!gray, label=center:3] (c) at (0, 2) {};
+      \node [state, fill=white!25!blue, label=center:1] (d) at (1, 1) {};
+      \node [state, fill=white!40!gray, label=center:0] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:2] (g) at (2, 2) {};
+
+      \draw [->, ultra thick] (a) -- (b);
+      \draw [->, ultra thick] (b) -- (c);
+      \draw [->, ultra thick] (b) -- (d);
+
+      \draw [<->, ultra thick, dashed] (c) -- node[above, sloped] {1} (d);
+      \draw [->, ultra thick, dashed] (c) -- node[above, sloped] {1} (f);
+      \draw [->, ultra thick, dashed] (d) -- node[above, sloped] {1} (g);
+    \end{tikzpicture}
+    \caption{Dritter Arbeiter}
+  \end{subfigure}%
+  \begin{subfigure} {0.2\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=gray] (a) at (0, 0) {};
+      \node [state, fill=gray] (b) at (0, 1) {};
+      \node [state, fill=white!40!gray, label=center:2] (c) at (0, 2) {};
+      \node [state, fill=white!40!gray, label=center:0] (d) at (1, 1) {};
+      \node [state, fill=white!25!blue] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:1] (g) at (2, 2) {};
+
+      \draw [->, ultra thick] (a) -- (b);
+      \draw [->, ultra thick] (b) -- (c);
+      \draw [->, ultra thick] (b) -- (d);
+
+      \draw [<->, ultra thick, dashed] (c) -- node[above, sloped] {1} (d);
+      \draw [->, ultra thick] (c) -- (f);
+      \draw [->, ultra thick, dashed] (d) -- node[above, sloped] {1} (g);
+    \end{tikzpicture}
+    \caption{Vierter Arbeiter}
+  \end{subfigure}%
+  \begin{subfigure}{0.2\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2, state/.style={circle, draw, minimum size=0.55cm}]
+      \node () at (0, 3) {Legende:};
+
+      \node [state, fill=white!25!blue] (cur) at (0, 2.5) {};
+      \node [align=left, anchor=west] () at (cur.east) {derzeitiger\\Arbeiter};
+
+      \node [state, fill=gray] (bes) at (0, 1.8) {};
+      \node [align=left, anchor=west] () at (bes.east) {besucht};
+
+      \node [state] (unb) at (0, 1.1) {};
+      \node [align=left, anchor=west] () at (unb.east) {unbesucht};
+
+      \node [state, fill=white!40!gray] (inq) at (0, 0.3) {i};
+      \node [align=left, anchor=west] () at (inq.east) {in Queue\\an Stelle i};
+
+      \draw [->, ultra thick] (-0.5, -0.4) -- node[right, xshift=12pt] {gegangen} ++(0.75, 0);
+      \draw [->, ultra thick, dashed] (-0.5, -0.9) -- node[above] {1} node[right, xshift=12pt] {potentiell} ++(0.75, 0);
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Modifizierter Dijkstra}
+  \label{fig:modbfs}
+\end{figure}
+
+\subsubsection{Einhaltung der Verlängerung}
+Damit jeder Arbeiter zu jedem Zeitpunkt die maximale Verlängerung einhält, muss man zu jedem Knoten die Distanz zum Start- bzw. Zielknoten abspeichern.
+Diese Informationen werden vom Dijkstra Algorithmus automatisch berechnet.
+Bei dieser Dijkstra Implementation wird für jeden Knoten der Vorgänger und die Distanz zum Startknoten abgespeichert.
+So erhält man eine Lookup-Table, die diese Informationen für jeden Knoten enthält.
+Da die Distanz zum Startknoten gespeichert wird, wird der modifizierte Dijkstra vom Zielknoten aus begonnen.
+Addiert man die bereits gegangene Strecke eines Arbeiters mit der Mindestdistanz zwischen seiner Position und dem Startknoten,
+erhält man die Mindestdistanz des Arbeiters und kann diese mit der maximalen Verlängerung vergleichen.
+Ist die Mindestdistanz größer als die maximal erlaubte Distanz wird der Arbeiter verworfen.
+
+\subsection{Additionen}
+Der Algorithmus lässt sich durch die Abstraktion mittels Arbeitern leicht verallgemeinern.
+
+\subsubsection{K-kürzeste Pfade}
+Dass der Algorithmus mehrere Pfadmäglichkeiten gleichzeitig berechnet, macht es möglich, ihn allgemein für das Problem, K-kürzeste Pfade zu finden, zu benutzen.
+So kann man beim Ausführen des Programms einen weiteren Parameter angeben, der angibt wie viele Pfade generiert werden sollen. Im Algorithmus wird dann nicht
+nach dem ersten fertigen Arbeiter abgebrochen, sondern erst nachdem die angegebene Anzahl an Arbeitern das Ziel erreicht hat.
+
+\subsubsection{Kürzester optimaler Pfad}
+Wenn man das Sortierungskriterium der Prioritätswarteschlange erweitert,
+kann man mit dem Algorithmus aus mehreren optimale Pfaden auch den kürzesten optimalen Pfad finden.
+Da jeder Arbeiter zur Gesamtkurvenanzahl auch die Gesamtdistanz speichert muss nur der Vergleichsoperator so angepasst werden,
+dass bei gleicher Gesamtkurvenanzahl die Gesamtdistanz beider Arbeiter verglichen wird.
+
+\section{Umsetzung}
+Die Implementation des Algorithmus besteht aus zwei Methoden, die den Dijkstra und den Algorithmus implementieren.
+
+\subsection{Übersetzen von Punkten zu Indizes}
+Um die Laufzeit und Leserlichkeit zu verbessern wird jeder Punkt im Straßennetz in eine Liste gespeichert. In den Implementationen beider Pathfinding Algorithmen werden
+nur noch die Indizes der Punkte verwendet. Erst bei der Ausgabe werden die Indizes wieder in Punkte übersetzt und ausgegeben. Dies hat den Vorteil, dass
+Listen für schon besuchte Knoten und Vorgängern als einfache Arrays realisiert werden können und nicht über Hashmaps oder ähnlichem implementiert werden müssen.
+
+\subsection{Datentypen}
+Der Graph wird als Adjazenzliste gespeichert, da dies die Implementation von Pathfinding Algorithmen sehr vereinfacht. Die Lookup-Table zur Übersetzung von Punkten
+ist ein einfaches Array an Punkten, in dem der Index eines Punktes diesen repräsentiert.
+
+\subsubsection{Worker Struct}
+Das Worker Struct speichert einen Arbeiter ab. Dieses speichert die derzeitige Position, die Gesamtdistanz, die Gesamtkurvenanzahl und den gegangenen Pfad des Arbeiters.
+Weiterhin definiert es für die Prioritätswarteschlange im Algorithmus Vergleichsoperatoren, die Arbeiter erst nach Gesamtkurvenanzahl und dann nach Gesamtdistanz sortieren.
+
+\subsubsection{Predecessor Struct}
+Das Predecessor Struct speichert lediglich den Vorgänger und die Distanz zum Startknoten eines Knotens für den Dijkstra Algorithmus.
+
+\subsection{Dijkstra Implementation}
+Die Dijkstra Implementation befindet sich in der Methode \texttt{findShortestPath} und ist, abgesehen von ein paar Ungewohnheiten durch C++, wie gewohnt über
+eine Prioritätswarteschlange implementiert. Diese Prioritätswarteschlange wird solange durchlaufen, bis diese leer ist.
+
+\begin{lstlisting}[frame=single]
+while(!queue.empty())
+{
+  // Zu bearbeitender Knoten wird aus der Queue genommen
+  uint32_t u = queue.top().second;
+  queue.pop();
+
+  [ ... ]
+}
+\end{lstlisting}
+
+Dadurch, dass die Prioritätswarteschlange der STL den Vergleichsoperator des Objekts benutzt,
+speichert die Warteschlange Distanz-Knoten Paare, die dann nach Distanz sortiert werden.
+
+\begin{lstlisting}[frame=single]
+// Distanz-Knoten Paar
+typedef std::pair<float, uint32_t> Distance;
+
+// Priority Queue sortiert nach Distanz (std::pair vergleicht zuerst ersten Wert)
+std::priority_queue<Distance, std::vector<Distance>, std::greater<Distance>> queue;
+\end{lstlisting}
+
+Außerdem kann man die Werte in der STL Prioritätswarteschlange nicht ändern. Deswegen werden die neuen Distanz-Knoten Paare einfach in die Warteschlange eingefügt,
+ohne die alten zu löschen. Dies hat nur eine minimale Auswirkung auf die Laufzeit, da schon besuchte Knoten übersprungen werden und dies durch die Implementierung
+als Array in konstanter Zeit möglich ist.
+
+\begin{lstlisting}[frame=single]
+// Speichert fuer alle Knoten, ob diese schon besucht wurden
+std::vector<bool> visited(lookup.size(), false);
+
+  [ ... ]
+
+// Schon besuchte Knoten ueberspringen
+if (visited[u])
+  continue;
+
+// Knoten als besucht markieren
+visited[u] = true;
+
+  [ ... ]
+
+// Nachbarknoten in die Queue pushen, da es in C++ keinen leichten
+// Weg gibt Elemente einer std::priority_queue zu aendern
+queue.push(std::make_pair(distance, v));
+\end{lstlisting}
+
+Am Ende wird ein Array an Predecessor Structs zurückgegeben, dass für jeden Knoten den Vorgänger und die Distanz zum Startknoten abspeichert.
+Dieses Array wird für jeden Nachbarn, der in die Prioritätswarteschlange eingefügt wird, erneuert.
+
+\begin{lstlisting}[frame=single]
+// Alle benachbarten Knoten durchlaufen
+for (auto v : adjList[u])
+{
+  // Schon besuchte ueberspringen
+  if (visited[v])
+    continue;
+
+  // Neue Distanz berechnen
+  float distance = predecessor[u].distance + getDist(u, v);
+
+  // Mit alter Distanz vergleichen
+  if (distance < predecessor[v].distance)
+  {
+    // Vorgaenger und Distanz updaten
+    predecessor[v].predecessor = u;
+    predecessor[v].distance = distance;
+
+    // Nachbarknoten in die Queue pushen, da es in C++ keinen leichten
+    // Weg gibt Elemente einer std::priority_queue zu aendern
+    queue.push(std::make_pair(distance, v));
+  }
+}
+\end{lstlisting}
+
+\subsection{Pathfinding Algorithmus Implementation}
+Der Pathfinding Algorithmus befindet sich in der \texttt{findFewestTurnPaths} Methode. Diese nimmt das zuvor berechnete Array an Predecessor Structs und die Anzahl
+zu berechnende Pfade an und gibt ein Array an Arbeiter Structs zurück, das die gewünschte Anzahl an Pfaden speichert.
+Zuerst wird eine Prioritätswarteschlange an Arbeitern mit dem ersten Arbeiter am Zielknoten initialisiert und die maximale Länge eines Pfades berechnet.
+
+\begin{lstlisting}[frame=single]
+// Priority Queue an Arbeitern (werden nach Kurvenanzahl und Gesamtdistanz sortiert)
+std::priority_queue<Worker, std::vector<Worker>, std::greater<Worker>> queue;
+
+// Anfangsarbeiter in die Queue pushen
+queue.push(Worker(end));
+
+// Maximaldistanz berechnen (Kuerzester Pfad * Verlaengerungsfaktor)
+float maxDistance = predecessor[end].distance * maxPercentage;
+\end{lstlisting}
+
+Dann wird, wie auch in der Dijkstra Implementation, die Queue solange durchlaufen, bis diese leer ist.
+
+\begin{lstlisting}[frame=single]
+while (!queue.empty())
+{
+  // Den naechsten Arbeiter aus der Queue nehmen
+  Worker worker = queue.top();
+  queue.pop();
+  
+  [ ... ]
+}
+\end{lstlisting}
+
+Daraufhin wird überprüft, ob der Pfad des Arbeiters die Maximaldistanz einhält. Dazu wird die derzeitige Strecke mit der minimalen Distanz zum Startknoten addiert
+und mit der zuvor berechneten Maximaldistanz verglichen.
+
+\begin{lstlisting}[frame=single]
+// Arbeiter mit zu langem Weg ueberspringen
+if (worker.distance + predecessor[worker.position].distance > maxDistance)
+  continue;
+\end{lstlisting}
+
+Dannach wird die Position des Arbeiters zu seinem Pfad hinzugefügt und überprüft, ob der Arbeiter am Ziel - beziehungsweise am Anfang - ist. Ist der Arbeiter an seinem
+Ziel wird er zu der Liste an gefundenen Pfaden hinzugefügt und die Suche abggebrochen, wenn genug Pfade gefunden wurden.
+
+\begin{lstlisting}[frame=single]
+// Derzeitige Position zum Pfad hinzufuegen
+worker.path.push_back(worker.position);
+
+// Ist der Arbeiter am "Ziel"?
+if (worker.position == start)
+{
+  // Arbeiter/Pfad abspeichern
+  paths.push_back(worker);
+  
+  // Wenn die gewuenschte Anzahl an Pfaden erreicht wurde abbrechen
+  if (paths.size() >= pathCap)
+    break;
+
+  // Zum naechsten Arbeiter gehen
+  continue;
+}
+\end{lstlisting}
+
+Zuletzt werden alle Nachbarknoten des Arbeiters durchlaufen und neue Arbeiter mit den Positionen der Nachbarknoten in die Warteschlange eingefügt.
+Dazu wird zuerst überprüft, ob der Arbeiter den Nachbarknoten schon mal besucht hat um unnötige Pfade zu eliminieren. Daraufhin wird die neue Gesamtdistanz des
+Arbeiters berechnet und die neue Kurvenanzahl berechnet, wenn mindestens drei Knoten vorhanden sind. Zuletzt wird ein neuer Arbeiter mit den neuen Daten in die
+Warteschlange eingefügt.
+
+\begin{lstlisting}[frame=single]
+// Alle Nachbarknoten durchgehen
+for (uint32_t v : adjList[worker.position])
+{
+  // Keine schon besuchten Knoten besuchen
+  if (std::find(worker.path.begin(), worker.path.end(), v) != worker.path.end())
+    continue;
+
+  // Neue Distanz berechnen
+  float dist = worker.distance + getDist(worker.position, v);
+
+  // Neue Kurvenanzahl berechnen
+  int turns = worker.turns;
+  if (worker.path.size() > 1) // Sind 3 Punkte verfuegbar?
+    turns += isCurve(worker.position, *(worker.path.end() - 2), v);
+
+  // Neuen Arbeiter in die Queue pushen
+  queue.push(Worker(v, dist, turns, worker.path));
+}
+\end{lstlisting}
+
+\subsection{Übersetzten der Eingabedatei}
+Die Eingabedatei wird mithilfe eines Regex, das Zahlen erfasst, Zeile für Zeile übersetzt.
+
+\begin{lstlisting}[frame=single]
+std::regex r("\\d+");
+\end{lstlisting}
+
+Mit diesem Regex wird aus den ersten drei Zeilen die Anzahl an Straßen und die Start- und Endposition eingelesen.
+Daraufhin werden nach und nach die Straßen eingelesen und in die Adjazenzliste und die Lookup-Table eingefügt.
+Dazu wird für beide Punkte überprüft, ob diese bereits in der Lookup-Table sind. Wenn ja, wird nur der Index an dem sich die Punkte befinden abgespeichert.
+Wenn nicht, werden sie in die Lookup-Table eingefügt und ebenfalls der Index gespeichert.
+
+\begin{lstlisting}[frame=single]
+int nodeA;
+Point p = {x1, y1};
+
+// Ist der Knoten schon in der Lookup Table vorhanden?
+auto it = std::find(lookup.begin(), lookup.end(), p);
+if (it == lookup.end())
+{
+  // Falls nicht, dann Punkt und Index speichern
+  nodeA = lookup.size();
+  lookup.push_back(p);
+}
+else
+  // Andernfalls nur den Index des Knoten auslesen
+  nodeA = std::distance(lookup.begin(), it);
+\end{lstlisting}
+
+Beide Indizes werden darauf in die Adjazenzliste eingefügt.
+
+\begin{lstlisting}[frame=single]
+// Kante in der Adjazenzliste speichern
+adjList[nodeA].insert(nodeB);
+adjList[nodeB].insert(nodeA);
+\end{lstlisting}
+
+\subsection{Laufzeitanalyse}
+Der Unterschied beider Pathfinding Algorithmen liegt darin, dass der normale Dijkstra Algorithmus auf der Basis von Knoten arbeitet.
+Der modifizierte Algorithmus dahingegen arbeitet auf der Basis von Pfaden.
+Generell kann man dann die Anzahl an Knoten $|V|$ durch die Anzahl an möglichen Pfaden $|P|$ ersetzen.
+Die Anzahl der möglichen Pfade zwischen zwei Punkten sind auf einem dichten Graphen $(|V| - 2)!$, oder einfach $|V|!$.
+Die Laufzeit des Dijkstra Algorithmus kommt stark auf die benutzten Datentypen und den Graphen an. Generell kommt die Laufzeit auf zwei Variablen
+$T_{dk}$, die Laufzeit der \textit{decrease-key} Operation des benutzen Datentyps, und $T_{em}$, die Laufzeit der \textit{extract-minimum} Operation, an.
+
+$$
+O(|E| * T_{dk} + |V| * T_{em})
+$$
+
+Für den modifizierten Dijkstra Algorithmus wird hier $|V|$ durch $|V|!$ ersetzt.
+
+$$
+O(|E| * T_{dk} + |V|! * T_{em})
+$$
+
+\subsubsection{Beobachtungen}
+Die Straßenkarten aus den Beispielen haben keine überkreuzenden Kanten, weswegen man davon ausgehen kann, dass es sich bei den Straßennetzen um planare Graphen handelt.
+Ein planarer Graph lässt sich, wie es der Name verrät, in einer Ebene darstellen, ohne dass sich Kanten schneiden. Ebenfalls besitzten die Straßennetze keine Schleifen oder
+Mehrfachkanten, weswegen die Kantenanzahl durch den eulerschen Polyedersatz beschränkt werden kann.
+
+$$ |E| \leq 3|V| - 6 $$
+$$ |E| \in O(|V|) $$
+
+Also gehören planare Graphen zu der Klasse der dünnen Graphen, was die Laufzeit beider Pathfinding Algorithmen verbessert.
+
+$$ \text{Normaler Dijkstra: } O(|V| * T_{dk} + |V| * T_{em}) $$
+$$ \text{Modifizierter Dijkstra: } O(|V| * T_{dk} + |V|! * T_{em}) $$
+
+Ein weiterer Aspekt planarer Graphen ist, dass der durchschnittliche Knotengrad eines planaren Graphen aufgrund des eulerschen Polyedersatzes immer $< 6$ ist.
+Dadurch kann man sagen, dass für große Knotenanzahlen die Anzahl möglicher Pfade wesentlich kleiner ist als $|V|!$.
+$|V|!$ gilt nämlich nur für komplette Graphen, wo jeder Knoten mit jedem anderen verbunden ist, also $(|V| - 1)$ Kanten hat.
+Ist $|V| \gg 6$ dann ist $|P| \ll |V|!$. Eine Suche nach einer genauen Formel für die Anzahl der Pfade auf Basis des durchschnittlichen Knotengrades ergab keine Ergebnisse.
+
+\subsubsection{Eine Formel für das asymptotische Verhalten von $|P|$}
+Um eine obere Grenze für die Anzahl von Pfaden zu bekommen, kann man alle Kombinationen an Kanten zusammenaddieren.
+Anhand der Abbildung \ref{fig:exthreenodes} mit drei Knoten sieht man, dass das Addieren aller Kantenkombinationen von $1$ bis $(|V| - 1)$ eine obere Grenze für $|P|$ gibt.
+Hier kann man nämlich entweder zwei Knoten mittels einer Kante, oder drei Knoten mit zwei Kanten verbinden.
+Gäbe es noch einen vierten Knoten könnte man diese mit drei Kanten verbinden.
+Die Anzahl an Möglichkeiten, wie man $k$ Kanten auf $|E|$ Kanten verteilen kann, gibt der Binomialkoeffizient.
+Also ergibt sich die Summe an Binomialkoeffizienten $|E|$ über $k$ von $k=1$ bis $k=|V|-1$ als Obergrenze für $|P|$.
+
+$$
+|P| = O\bigg(\displaystyle\sum_{k=1}^{|V| - 1} \binom{|E|}{k}\bigg)
+$$
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick, color=blue] (n1) -- (n2);
+      \draw[ultra thick] (n2) -- (n3);
+      \draw[ultra thick] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick] (n1) -- (n2);
+      \draw[ultra thick, color=blue] (n2) -- (n3);
+      \draw[ultra thick] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick] (n1) -- (n2);
+      \draw[ultra thick] (n2) -- (n3);
+      \draw[ultra thick, color=blue] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick, color=blue] (n1) -- (n2);
+      \draw[ultra thick, color=blue] (n2) -- (n3);
+      \draw[ultra thick] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick, color=blue] (n1) -- (n2);
+      \draw[ultra thick] (n2) -- (n3);
+      \draw[ultra thick, color=blue] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.16\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1]
+      \foreach \a in {1,2,3} {
+        \node [circle, draw] (n\a) at (\a*360/3:1cm) {};
+      }
+      \draw[ultra thick] (n1) -- (n2);
+      \draw[ultra thick, color=blue] (n2) -- (n3);
+      \draw[ultra thick, color=blue] (n3) -- (n1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \caption{$|P| = 6$ bei $|V| = 3$ mit $|E| = 3$ und $O(|P|) = 6$}
+  \label{fig:exthreenodes}
+\end{figure}
+
+Nun kann man den Fakt ausnutzen, dass sich die Kantenanzahl auf dünnen Graphen asymptotisch wie die Knotenanzahlen verhält, also $|E| = O(|V|)$ gilt.
+
+$$
+|P| = O\bigg(\displaystyle\sum_{k=1}^{|V| - 1} \binom{|V|}{k}\bigg)
+$$
+
+Mithilfe des binomischen Lehrsatzes kann man diese Gleichung lösen.
+
+$$
+(x + y)^{n} = \displaystyle\sum_{k=0}^{n} \binom{n}{k} x^{n-k} y^{k}
+$$
+
+Um die Formel so umzustellen, dass nur noch die Binomialkoeffizienten summiert werden, muss für $x$ und $y$ eine $1$ eingesetzt werden.
+
+$$
+2^{n} = \displaystyle\sum_{k=0}^{n} \binom{n}{k}*1^{n-k}*1^{k} = \displaystyle\sum_{k=0}^{n} \binom{n}{k}
+$$
+
+In der Formel für $O(|P|)$ wird nur von $1$ bis $|V| - 1$ iteriert, also muss das Ergebnis $- 2$ gerechnet werden, da $\binom{n}{0} = 1$ und $\binom{n}{n} = 1$ ist.
+
+$$ 2^{n} = \displaystyle\sum_{k=0}^{n} \binom{n}{k} $$
+$$ 2^{n} = \displaystyle\sum_{k=1}^{n-1} \binom{n}{k} + \binom{n}{0} + \binom{n}{n} $$
+$$ 2^{n} = \displaystyle\sum_{k=1}^{n-1} \binom{n}{k} + 2 $$
+$$ 2^{n} - 2 = \displaystyle\sum_{k=1}^{n-1} \binom{n}{k} $$
+
+Ersetzt man nun $n$ durch die Knotenanzahl erhält man das Ergebnis.
+
+$$ 2^{|V|} - 2 = \displaystyle\sum_{k=1}^{|V| - 1} \binom{|V|}{k} $$
+$$ O(|P|) = 2^{|V|} - 2 = 2^{|V|} $$
+
+Die Laufzeit des modifizierten Dijkstra sieht nun schon besser aus.
+
+$$ O(|V| * T_{dk} + 2^{|V|} * T_{em}) $$
+
+\subsubsection{Implementationsdetails}
+Die Laufzeit der \textit{pop} und \textit{push} Operationen der STL Prioritätswarteschlange haben beide eine Laufzeit von $O(log(n))$,
+während die \textit{top} Operation eine konstante Laufzeit $O(1)$ hat.
+Die \textit{extract-minimum} Operation besteht aus dem Abrufen eines Arbeiters mit \textit{top} und dem darauffolgendem Löschen mit \textit{pop}.
+Daraus ergibt sich für $T_{em}$ eine Laufzeit von $O(log(n))$.
+Die \textit{decrease-key} Operation besteht aus einer \textit{push} Operation mit dem neuen Wert, da die Werte in der Warteschlange nur schwer verändert werden konnen.
+Somit ist die Laufzeit von $T_{dk} = O(log(n))$.
+
+\subsubsection{Zusammentragen der Ergebnisse}
+Wenn nun alle Ergebnisse zusammengetragen werden, kommt man für den normalen Dijkstra Algorithmus auf eine Laufzeit von:
+
+$$ O(|E| * T_{dk} + |V| * T_{em}) $$
+$$ O(|V|log(|V|) + |V|log(|V|)) $$
+$$ O((|V| + |V|)log(|V|)) $$
+$$ O(2|V|log(|V|)) $$
+$$ O(|V|log(|V|)) $$
+
+Für den modifizierten Dijkstra muss man beachten, dass $T_{dk}$ und $T_{em}$ sich auf die Warteschlange beziehen, die alle Pfade speichert.
+Deswegen muss hier $|P|$ anstatt $|V|$ verwendet werden.
+
+$$ O(|E| * T_{dk} + |P| * T_{em}) $$
+$$ O(|V|log(|P|) + |P|log(|P|)) $$
+$$ O(|V|log(2^{|V|}) + 2^{|V|}log(2^{|V|})) $$
+$$ O((|V| + 2^{|V|})log(2^{|V|})) $$
+$$ O(2^{|V|}log(2^{|V|})) $$
+
+Die Laufzeit des gesamten Programms setzt sich aus beiden Laufzeit zusammen. Beide Laufzeit werden miteinander addiert,
+da jeder Algorithmus einmal nacheinander benutzt wird.
+
+$$ O(|V|log(|V|) + 2^{|V|}log(2^{|V|})) $$
+$$ O(2^{|V|}log(2^{|V|})) $$
+
+Asymptotisch überwiegt der modifizierte Dijkstra, weswegen die Laufzeit des normalen Dijkstra verworfen werden kann.
+
+\subsection{Real-world performance}
+In der Praxis ist der Algorithmus wesentlich schneller, als es die Laufzeitanalyse vermuten lässt. In den folgenden Tabellen sind die Laufzeiten des Programms
+unter verschiedenen Bedingungen aufgelistet. Damit die Ausgabe der 100000 Pfade auf der Konsole die Zeiterfassung nicht beeinflusst, wurde die Ausgabe hierfür deaktiviert.
+
+In Tabelle \ref{tab:difpathcount} sieht man die Laufzeit in Millisekunden, wenn man die Beispiele mit verschiedenen Pfadanzahlen berechnen lässt.
+Das Längenlimit wurde ``deaktiviert''  indem die Verlängerung auf 100000\% gesetzt wurde.
+Die Zeiten bei \textit{abbiegen0} sind konstant, da der Algorithmus dort nur maximal 22 Pfade findet und somit der Rechenaufwand nicht steigt.
+
+Der benutzte Befehl ist:
+\begin{lstlisting}[language=bash, numbers=none]
+$ time ./abbiegen ${file} 100000 -c ${count} -n
+\end{lstlisting}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|r|r|r|r|r|}
+    \multicolumn{2}{c|}{\multirow{2}{*}{Zeit t [ms]}} & \multicolumn{4}{|c|}{Beispiel [Nr.]} \\
+    \cline{3-6}
+    \multicolumn{2}{c|}{} & \multicolumn{1}{|c|}{0} & \multicolumn{1}{|c|}{1} & \multicolumn{1}{|c|}{2} & \multicolumn{1}{|c|}{3} \\
+    \hline
+    \parbox[t]{3mm}{\multirow{6}{*}{\rotatebox[origin=c]{90}{\# Pfade}}}
+    & 1      & 5 &   12 &    6 &    7 \\
+    & 10     & 5 &   27 &    8 &   18 \\
+    & 100    & 5 &   80 &   15 &   43 \\
+    & 1000   & 5 &  266 &   50 &  130 \\
+    & 10000  & 5 & 1067 &  554 &  997 \\
+    & 100000 & 5 & 7575 & 4710 & 3689 \\
+    \hline
+  \end{tabular}
+  \caption{Zeiten (versch. Pfadanzahlen, ohne Längenlimit) [Intel i7-6700 @ 3,40 GHz]}
+  \label{tab:difpathcount}
+\end{table}
+
+In Tabelle \ref{tab:difmaxlen} sind die Laufzeiten in Millisekunden im Bezug auf verschiedene Verlängerungen angegeben. Hierzu wurde für jedes Beispiel ein Pfad berechnet
+und jeweils die maximale Verlängerung verändert.
+
+Der benutzte Befehl ist:
+\begin{lstlisting}[language=bash, numbers=none]
+$ time ./abbiegen ${file} ${length} -n
+\end{lstlisting}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|r|r|r|r|r|}
+    \multicolumn{2}{c|}{\multirow{2}{*}{Zeit t [ms]}} & \multicolumn{4}{|c|}{Beispiel [Nr.]} \\
+    \cline{3-6}
+    \multicolumn{2}{c|}{} & \multicolumn{1}{|c|}{0} & \multicolumn{1}{|c|}{1} & \multicolumn{1}{|c|}{2} & \multicolumn{1}{|c|}{3} \\
+    \hline
+    \parbox[t]{3.5mm}{\multirow{6}{*}{\rotatebox[origin=c]{90}{Verläng. [\%]}}}
+    & 10  & 5 &  6 & 6 &  6 \\
+    & 15  & 5 &  6 & 6 &  6 \\
+    & 20  & 5 & 11 & 6 &  7 \\
+    & 30  & 5 & 17 & 6 &  8 \\
+    & 50  & 5 & 29 & 7 &  8 \\
+    & 100 & 5 & 32 & 8 & 10 \\
+    \hline
+  \end{tabular}
+  \caption{Zeiten (versch. Verlängerungen, ein Pfad) [Intel i7-6700 @ 3,40 GHz]}
+  \label{tab:difmaxlen}
+\end{table}
+
+\subsection{Bedienung}
+Das Programm lässt sich über die Konsole starten und kann einige Kommandozeilenargumente annehmen. Die Ausgabe wird ebenfalls auf der Konsole angezeigt.
+
+\subsubsection{Argumente}
+Zum Ausführen des Programm muss immer die Eingabedatei und die Verlängerung angegeben werden. Wenn nicht anders angegeben ist der erste Parameter die Eingabedatei
+und der zweite Parameter die Verlängerung.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./abbiegen <Eingabedatei> <Verlaengerung>
+$ ./abbiegen ../Beispiele/abbiegen0.txt 30
+\end{lstlisting}
+
+Um zum Beispiel die Anzahl der Pfade zu deklarieren, die Ausgabe zu deaktivieren oder die Eingabedatei explizit zu deklarieren gibt es weitere Parameter,
+die man steuern kann.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|c|c|l}
+    kurz & lang & Syntax & Beschreibung \\
+    \texttt{-i} & \texttt{-{}-input} & \texttt{-i <Eingabedatei>} & Spezifiziert die Eingabedatei explizit \\
+    \texttt{-p} & \texttt{-{}-percentage} & \texttt{-p <Verlaengerung>} & Spezifiziert die Verlängerung explizit \\
+    \texttt{-c} & \texttt{-{}-count} & \texttt{-c <Pfadanzahl>} & Spezifiziert die Pfadanzahl \\
+    \texttt{-d} & \texttt{-{}-debug} & \texttt{-d} & Gibt zusätzliche Informationen aus \\
+    \texttt{-n} & \texttt{-{}-no-print} & \texttt{-n} & Deaktiviert die Ausgabe
+  \end{tabular}
+\end{table}
+
+\subsubsection{Ausgabe}
+Die Ausgabe zeigt zuerst den optimalen Pfad mit weiteren Eigenschaften an. Wenn mehrere Pfade generiert werden, werden die weiteren Pfade darunter ausgegeben.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./abbiegen ../Beispiele/abbiegen2.txt 30 -c 5
+
+Pfad mit den wenigsten Kurven:
+(0,0) (1,0) (3,1) (4,1) (5,1) (6,1) (7,1) (8,2) (9,3) (9,2) (9,1) (9,0)
+Kurven (bester Pfad): 4
+Länge (bester Pfad) : 13.0645
+Länge (kürest. Pfad): 10.8863
+Verlängerung        : 1.20008 < 1.3
+
+Alternative Pfade:
+(0,0) (1,0) (2,0) (4,1) (5,1) (6,1) (7,1) (8,2) (9,3) (9,2) (9,1) (9,0)
+Kurven : 4
+Länge  : 13.0645
+Faktor : 1.20008 < 1.3
+
+(0,0) (1,0) (2,0) (3,0) (4,1) (5,1) (6,1) (7,1) (8,2) (9,3) (9,2) (9,1) (9,0)
+Kurven : 4
+Länge  : 13.2426
+Faktor : 1.21644 < 1.3
+
+(0,0) (1,0) (3,1) (4,1) (5,1) (6,1) (7,1) (8,2) (9,1) (9,0)
+Kurven : 5
+Länge  : 11.0645
+Faktor : 1.01636 < 1.3
+
+(0,0) (1,0) (2,0) (4,1) (5,1) (6,1) (7,1) (8,2) (9,1) (9,0)
+Kurven : 5
+Länge  : 11.0645
+Faktor : 1.01636 < 1.3
+\end{lstlisting}
+
+\section{Beispiele}
+Im folgenden werden zuerst die Ergebnisse des Programms bei allen Beispieldateien aufgelistet,
+daraufhin wird anhand des ersten Beispiels die Funktionsweise anschaulich erläutert.
+
+\subsection{Ergebnisse}
+In Tabelle \ref{tab:results} sind die Ergebnisse des Programms bei allen Beispieldateien mit den Verlängerungen 10\%, 15\%, 20\% und 30\% aufgelistet.
+Dabei sind Zeilen, bei denen der Algorithmus auf das gleiche Ergebnis kommt, verbunden um Platz zu sparen.
+Die Tabelle zeigt für jede Beispieldatei und jede Verlängerung die Anzahl an Kurven des optimalen Pfades, die Länge des optimalen Pfades, die Länge des kürzesten Pfades,
+den Verlängerungsfaktor zwischen dem optimalen und dem kürzesten Pfad, und den optimalen Pfad.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabularx}{\textwidth}{|c|c|c|c|c|c|X|}
+    \hline
+    \textbf{Datei} & \textbf{Verl.} & \textbf{Kurven} & \textbf{Länge} & \textbf{min. Länge} & \textbf{Faktor} & \textbf{Pfad} \\ \hline
+    \parbox[t]{3.5mm}{\multirow{5}{*}{\rotatebox[origin=c]{90}{abbiegen0}}}
+    & 10\%                  & 3                  & 5,828                  & \multirow{5}{*}{5,828} & 1,000                  & (0,~0) (0,~1) (1,~1) (2,~2) (3,~3) (4,~3) \\ \cline{2-4} \cline{6-7}
+    & 15\%                  & \multirow{2}{*}{2} & \multirow{2}{*}{6,414} &                        & \multirow{2}{*}{1,101} & \multirow{2}{*}{\parbox{\hsize}{(0,~0) (0,~1) (0,~2) (1,~3) (2,~3) (3,~3) (4,~3)}} \\ \cline{2-2}
+    & 20\%                  &                    &                        &                        &                        & \\ \cline{2-4} \cline{6-7}
+    & \multirow{2}{*}{30\%} & \multirow{2}{*}{1} & \multirow{2}{*}{7,000} &                        & \multirow{2}{*}{1,201} & (0,~0) (0,~1) (0,~2) (0,~3) (1,~3) (2,~3) (3,~3) (4,~3) \\ \cline{2-4} \cline{6-7}
+    \hline
+
+    \parbox[t]{3.5mm}{\multirow{6}{*}{\rotatebox[origin=c]{90}{abbiegen1}}}
+    & \multirow{3}{*}{10\%} & \multirow{3}{*}{6} & \multirow{3}{*}{17,301} & \multirow{6}{*}{17,122} & \multirow{3}{*}{1,010} & (0,~0) (1,~1) (2,~1) (3,~1) (4,~1) (5,~1) (7,~2) (9,~3) (10,~2) (10,~1) (11,~1) (12,~1) (13,~1) (14,~1) (14,~0) \\ \cline{2-4} \cline{6-7}
+    & 15\%                  & \multirow{3}{*}{5} & \multirow{3}{*}{19,122} &                         & \multirow{3}{*}{1,117} & \multirow{3}{*}{\parbox{\hsize}{(0,~0) (1,~1) (2,~1) (3,~1) (4,~1) (5,~1) (7,~2) (9,~3) (11,~4) (11,~3) (12,~3) (13,~3) (14,~3) (14,~2) (14,~1) (14,~0)}} \\ \cline{2-2}
+    & 20\%                  &                    &                         &                         &                        & \\ \cline{2-2}
+    & 30\%                  &                    &                         &                         &                        & \\ \cline{2-4} \cline{6-7}
+    \hline
+    
+    \parbox[t]{3.5mm}{\multirow{5}{*}{\rotatebox[origin=c]{90}{abbiegen2}}}
+    & 10\%                  & \multirow{3}{*}{5} & \multirow{3}{*}{11,064} & \multirow{5}{*}{10,886} & \multirow{3}{*}{1,016} & \multirow{3}{*}{\parbox{\hsize}{(0, 0) (1,~0) (3,~1) (4,~1) (5,~1) (6,~1) (7,~1) (8,~2) (9,~1) (9,~0)}} \\ \cline{2-2}
+    & 15\%                  &                    &                         &                         &                        & \\ \cline{2-2}
+    & 20\%                  &                    &                         &                         &                        & \\ \cline{2-4} \cline{6-7}
+    & \multirow{2}{*}{30\%} & \multirow{2}{*}{4} & \multirow{2}{*}{13,064} &                         & \multirow{2}{*}{1,200} & (0,~0) (1,~0) (3,~1) (4,~1) (5,~1) (6,~1) (7,~1) (8,~2) (9,~3) (9,~2) (9,~1) (9,~0) \\ \cline{2-4} \cline{6-7}
+    \hline
+
+    \parbox[t]{3.5mm}{\multirow{4}{*}{\rotatebox[origin=c]{90}{abbiegen3}}}
+    & 10\% & \multirow{4}{*}{4} & \multirow{4}{*}{17,886} & \multirow{4}{*}{17,122} & \multirow{4}{*}{1,045} & \multirow{4}{*}{\parbox{\hsize}{(0,~0) (1,~1) (2,~1) (3,~1) (4,~1) (5,~1) (7,~2) (9,~3) (10,~3) (11,~3) (12,~3) (13,~3) (14,~3) (14,~2) (14,~1) (14,~0)}} \\ \cline{2-2}
+    & 15\% &                    &                         &                         &                        & \\ \cline{2-2}
+    & 20\% &                    &                         &                         &                        & \\ \cline{2-2}
+    & 30\% &                    &                         &                         &                        & \\ \cline{2-4} \cline{6-7}
+    \hline
+  \end{tabularx}
+  \caption{Ergebnisse}
+  \label{tab:results}
+\end{table}
+
+\subsection{Beispiel an \textit{abbiegen0}}
+Im folgenden wird die Funktionsweise des Programms an dem Beispielstraßennetz erläutert.
+Hier wird darauf eingegangen, wie die Rückgabe des normalen Dijkstra Algorithmus benutzt wird,
+wie der modifizierte Dijkstra den optimalen Pfad findet und wie dieser alternative Pfade findet.
+
+\subsubsection{Die Vorgängerkarte des Dijkstra Algorithmus}
+Am Ende des Dijkstra Algorithmus wird eine Vorgängerkarte zurückgegeben. Diese speichert für jeden Knoten den Vorgänger und die Distanz zum Startknoten ab.
+In Abbildung \ref{fig:predecessormap} ist die Vorgängerkarte des Beispiels abgebildet.
+Daran kann man erkennen, dass der kürzeste Pfad eine Länge von 5,8 hat und die unteren Knoten entlangläuft.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.6\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.3, state/.style={circle, draw, minimum size=0.8cm}]]
+      \node [state] (a) at (0, 0) {0};
+      \node [state] (b) at (0, 1) {1};
+      \node [state] (c) at (0, 2) {2};
+      \node [state] (d) at (0, 3) {3};
+      \node [state] (e) at (1, 1) {2};
+      \node [state] (f) at (1, 3) {3,4};
+      \node [state] (g) at (2, 2) {3,4};
+      \node [state] (h) at (2, 3) {4,4};
+      \node [state] (i) at (3, 3) {4,8};
+      \node [state] (j) at (4, 3) {5,8};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [->, ultra thick] (b) -- (a);
+      \draw [->, ultra thick] (c) -- (b);
+      \draw [->, ultra thick] (d) -- (c);
+      \draw [->, ultra thick] (e) -- (b);
+      \draw [->, ultra thick] (f) -- (c);
+      \draw [->, ultra thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, ultra thick] (i) -- (g);
+
+      \draw (f) -- (d);
+      \draw (c) -- (e);
+      \draw (f) -- (g);
+      \draw (h) -- (i);
+      \draw (h) -- (g);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure}{0.4\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2]
+      \node () at (0, 1.7) {Legende:};
+
+      \node [circle, draw, minimum size=0.8cm] (node) at (0, 1) {5,8};
+      \node [align=left, anchor=west] () at (node.east) {Knoten mit\\Distanz zum Startknoten};
+
+      \draw [<-, ultra thick] (-0.5, 0.3) -- node[right, xshift=12pt] {Vorgänger von} ++(0.75, 0);
+      \draw (-0.5, -0.2) -- node[right, xshift=12pt] {Kante} ++(0.75, 0);
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Vorgängerkarte}
+  \label{fig:predecessormap}
+\end{figure}
+
+\subsubsection{Den optimalen Pfad finden}
+Da der Dijkstra Algorithmus für jeden Knoten die Minimaldistanz zum Startknoten berechnet hat, wird der modifizierte Dijkstra Algorithmus vom Zielknoten aus gestartet.
+Dieser läuft zuerst die obere Kante entlang, da jede Kante dort keine Kurve bildet und somit ein Gewicht von 0 hat.
+In Abbildung \ref{fig:explainbfs1} sind die ersten fünf Iterationen des Algorithmus dargestellt.
+Hier wird immer der erste Arbeiter aus der Prioritätswarteschlange genommen, da dieser die beste Kurvenanzahl und den kürzesten Pfad hat.
+Hieran kann man auch die Verlängerung gut erklären. Jeder Arbeiter speichert nämlich die Länge seines bisherigen Pfades.
+Dies kann man zusammen mit der Mindestdistanz zum Startknoten verwenden, um unnötige Arbeiter direkt zu verwerfen.
+Beträgt die Verlängerung 15\% ergibt sich aus der Länge 5,8 des kürzesten Pfades eine Maximaldistanz von 6,7.
+Addiert man in der fünften Iteration die bisherige Distanz 4 des Arbeiters mit der Minimaldistanz 3 zum Startknoten an seiner Position,
+erhält man die Mindestlänge, die der Arbeiter noch erreichen kann. Ist diese länger als die Maximaldistanz von 6,7 wird der Arbeiter direkt verworfen.
+Hier beträgt diese Mindestlänge 7 und somit würde der Arbeiter verworfen werden.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state] (b) at (0, 1) {};
+      \node [state] (c) at (0, 2) {};
+      \node [state] (d) at (0, 3) {};
+      \node [state] (e) at (1, 1) {};
+      \node [state] (f) at (1, 3) {};
+      \node [state] (g) at (2, 2) {};
+      \node [state] (h) at (2, 3) {};
+      \node [state, fill=white!40!gray, label=center:0] (i) at (3, 3) {};
+      \node [state, fill=white!25!blue] (j) at (4, 3) {};
+
+      \draw [->, dashed, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [thick] (c) -- (b);
+      \draw [thick] (d) -- (c);
+      \draw [thick] (e) -- (b);
+      \draw [thick] (f) -- (c);
+      \draw [thick] (g) -- (e);
+      \draw [thick] (h) -- (f);
+      \draw [thick] (i) -- (g);
+      \draw [thick] (f) -- (d);
+      \draw [thick] (c) -- (e);
+      \draw [thick] (f) -- (g);
+      \draw [thick] (h) -- (i);
+      \draw [thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{Erste Iteration}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state] (b) at (0, 1) {};
+      \node [state] (c) at (0, 2) {};
+      \node [state] (d) at (0, 3) {};
+      \node [state] (e) at (1, 1) {};
+      \node [state] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:1] (g) at (2, 2) {};
+      \node [state, fill=white!40!gray, label=center:0] (h) at (2, 3) {};
+      \node [state, fill=white!25!blue] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [thick] (c) -- (b);
+      \draw [thick] (d) -- (c);
+      \draw [thick] (e) -- (b);
+      \draw [thick] (f) -- (c);
+      \draw [thick] (g) -- (e);
+      \draw [thick] (h) -- (f);
+      \draw [->, dashed, ultra thick] (i) -- (g);
+      \draw [thick] (f) -- (d);
+      \draw [thick] (c) -- (e);
+      \draw [thick] (f) -- (g);
+      \draw [<-, dashed, ultra thick] (h) -- (i);
+      \draw [thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{Zweite Iteration}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state] (b) at (0, 1) {};
+      \node [state] (c) at (0, 2) {};
+      \node [state] (d) at (0, 3) {};
+      \node [state] (e) at (1, 1) {};
+      \node [state, fill=white!40!gray, label=center:0] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:1;2] (g) at (2, 2) {};
+      \node [state, fill=white!25!blue] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [thick] (c) -- (b);
+      \draw [thick] (d) -- (c);
+      \draw [thick] (e) -- (b);
+      \draw [thick] (f) -- (c);
+      \draw [thick] (g) -- (e);
+      \draw [->, dashed, ultra thick] (h) -- (f);
+      \draw [->, dashed, ultra thick] (i) -- (g);
+      \draw [thick] (f) -- (d);
+      \draw [thick] (c) -- (e);
+      \draw [thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [->, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{Dritte Iteration}
+  \end{subfigure}\\
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state] (b) at (0, 1) {};
+      \node [state, fill=white!40!gray, label=center:4] (c) at (0, 2) {};
+      \node [state, fill=white!40!gray, label=center:0] (d) at (0, 3) {};
+      \node [state] (e) at (1, 1) {};
+      \node [state, fill=white!25!blue] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:1;2;3, minimum size=0.8cm] (g) at (2, 2) {};
+      \node [state, fill=gray] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [thick] (c) -- (b);
+      \draw [thick] (d) -- (c);
+      \draw [thick] (e) -- (b);
+      \draw [->, dashed, ultra thick] (f) -- (c);
+      \draw [thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, dashed, ultra thick] (i) -- (g);
+      \draw [->, dashed, ultra thick] (f) -- (d);
+      \draw [thick] (c) -- (e);
+      \draw [->, dashed, ultra thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [->, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{Vierte Iteration}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state] (b) at (0, 1) {};
+      \node [state, fill=white!40!gray, label=center:3;4] (c) at (0, 2) {};
+      \node [state, fill=white!25!blue] (d) at (0, 3) {};
+      \node [state] (e) at (1, 1) {};
+      \node [state, fill=gray] (f) at (1, 3) {};
+      \node [state, fill=white!40!gray, label=center:0;1;2, minimum size=0.8cm] (g) at (2, 2) {};
+      \node [state, fill=gray] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [thick] (c) -- (b);
+      \draw [->, dashed, ultra thick] (d) -- (c);
+      \draw [thick] (e) -- (b);
+      \draw [->, dashed, ultra thick] (f) -- (c);
+      \draw [thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, dashed, ultra thick] (i) -- (g);
+      \draw [->, ultra thick] (f) -- (d);
+      \draw [thick] (c) -- (e);
+      \draw [->, dashed, ultra thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [->, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{Fünfte Iteration}
+  \end{subfigure}%
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.2, state/.style={circle, draw, minimum size=0.55cm}]
+      \node () at (0, 3) {Legende:};
+
+      \node [state, fill=white!25!blue] (cur) at (0, 2.5) {};
+      \node [align=left, anchor=west] () at (cur.east) {derzeitiger\\Arbeiter};
+
+      \node [state, fill=gray] (bes) at (0, 1.8) {};
+      \node [align=left, anchor=west] () at (bes.east) {besucht};
+
+      \node [state] (unb) at (0, 1.1) {};
+      \node [align=left, anchor=west] () at (unb.east) {unbesucht};
+
+      \node [state, fill=white!40!gray] (inq) at (0, 0.3) {i};
+      \node [align=left, anchor=west] () at (inq.east) {in Queue\\an Stelle i};
+
+      \draw [->, ultra thick] (-0.5, -0.4) -- node[right, xshift=12pt] {gegangen} ++(0.75, 0);
+      \draw [->, ultra thick, dashed] (-0.5, -0.9) -- node[right, xshift=12pt] {potentiell} ++(0.75, 0);
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Entlang der oberen Kante laufen}
+  \label{fig:explainbfs1}
+\end{figure}
+
+In den folgenden Iterationen 6 bis 13 werden nach und nach alle Arbeiter mit einer Kurvenanzahl von 1 abgearbeitet, bis der optimale Pfad gefunden wird.
+Hier werden die Arbeiter ebenfalls nach Distanz sortiert, also werden zuerst die Arbeiter mit einem kürzeren bisherigen Pfad abgearbeitet.
+In den letzten drei Iterationen geht der Arbeiter links oben mit dem optimalen Pfad zum Ziel. (\abbref{fig:explainbfs2})
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.11, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state] (a) at (0, 0) {};
+      \node [state, fill=white!40!gray, label=center:0;5;6, minimum size=0.8cm] (b) at (0, 1) {};
+      \node [state, fill=white!25!blue, label=center:6] (c) at (0, 2) {};
+      \node [state, fill=gray, label=center:7] (d) at (0, 3) {};
+      \node [state, fill=gray, label=center:4;8;9, minimum size=0.8cm] (e) at (1, 1) {};
+      \node [state, fill=gray, label=center:2;3] (f) at (1, 3) {};
+      \node [state, fill=gray] (g) at (2, 2) {};
+      \node [state, fill=gray, label=center:1] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [thick] (b) -- (a);
+      \draw [->, dashed, ultra thick] (c) -- (b);
+      \draw [<-, dashed, ultra thick] (d) -- (c);
+      \draw [->, dashed, ultra thick] (e) -- (b);
+      \draw [<-, dashed, ultra thick] (f) -- (c);
+      \draw [->, dashed, ultra thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, ultra thick] (i) -- (g);
+      \draw [->, ultra thick] (f) -- (d);
+      \draw [<->, dashed, ultra thick] (c) -- (e);
+      \draw [<-, dashed, ultra thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [<-, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{11. Iteration}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.11, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=white!40!gray, label=center:0] (a) at (0, 0) {};
+      \node [state, fill=white!25!blue, label=center:5;7] (b) at (0, 1) {};
+      \node [state, fill=gray, label=center:6] (c) at (0, 2) {};
+      \node [state, fill=gray, label=center:8] (d) at (0, 3) {};
+      \node [state, fill=gray, label={[align=center]center:3;9;\\10;11}, minimum size=1cm] (e) at (1, 1) {};
+      \node [state, fill=gray, label=center:2;4] (f) at (1, 3) {};
+      \node [state, fill=gray] (g) at (2, 2) {};
+      \node [state, fill=gray, label=center:1] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [->, dashed, ultra thick] (b) -- (a);
+      \draw [->, dashed, ultra thick] (c) -- (b);
+      \draw [<-, dashed, ultra thick] (d) -- (c);
+      \draw [<->, dashed, ultra thick] (e) -- (b);
+      \draw [<-, dashed, ultra thick] (f) -- (c);
+      \draw [->, dashed, ultra thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, ultra thick] (i) -- (g);
+      \draw [->, ultra thick] (f) -- (d);
+      \draw [<->, dashed, ultra thick] (c) -- (e);
+      \draw [<-, dashed, ultra thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [<-, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{12. Iteration}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.11, state/.style={circle, draw, minimum size=0.6cm}]
+      \node [state, fill=white!25!blue] (a) at (0, 0) {};
+      \node [state, fill=gray, label=center:4;6] (b) at (0, 1) {};
+      \node [state, fill=gray, label=center:5] (c) at (0, 2) {};
+      \node [state, fill=gray, label=center:7] (d) at (0, 3) {};
+      \node [state, fill=gray, label={[align=center]center:2;8;\\9;10}, minimum size=1cm] (e) at (1, 1) {};
+      \node [state, fill=gray, label=center:1;3] (f) at (1, 3) {};
+      \node [state, fill=gray] (g) at (2, 2) {};
+      \node [state, fill=gray, label=center:0] (h) at (2, 3) {};
+      \node [state, fill=gray] (i) at (3, 3) {};
+      \node [state, fill=gray] (j) at (4, 3) {};
+
+      \draw [->, ultra thick] (j) -- (i);
+      \draw [->, ultra thick] (b) -- (a);
+      \draw [->, dashed, ultra thick] (c) -- (b);
+      \draw [<-, dashed, ultra thick] (d) -- (c);
+      \draw [<->, dashed, ultra thick] (e) -- (b);
+      \draw [<-, dashed, ultra thick] (f) -- (c);
+      \draw [->, dashed, ultra thick] (g) -- (e);
+      \draw [->, ultra thick] (h) -- (f);
+      \draw [->, ultra thick] (i) -- (g);
+      \draw [->, ultra thick] (f) -- (d);
+      \draw [<->, dashed, ultra thick] (c) -- (e);
+      \draw [<-, dashed, ultra thick] (f) -- (g);
+      \draw [<-, ultra thick] (h) -- (i);
+      \draw [<-, dashed, ultra thick] (h) -- (g);
+    \end{tikzpicture}
+    \caption{13. Iteration}
+  \end{subfigure}
+  \caption{Zum Ziel laufen}
+  \label{fig:explainbfs2}
+\end{figure}
+
+\subsubsection{Mehrere optimale Pfade finden}
+Wenn mehrere Pfade gefragt sind, stoppt der Algorithmus nicht, nachdem der erste Arbeiter am Ziel ist. Hier werden so viele Iterationen durchloffen, bis die gewünschte
+Anzahl an Arbeitern am Ziel ist. Eine Liste dieser Arbeiter wird dann zurückgegeben.
+
+\newpage
+
+\section{Quellcode}
+\subsection{Struct Definitionen (pathfinder.hpp)}
+\lstinputlisting[firstline=9, lastline=47]{../Quelltext/pathfinder.hpp}
+
+\subsection{Globale Variablen (pathfinder.hpp)}
+\lstinputlisting[firstline=54, lastline=65]{../Quelltext/pathfinder.hpp}
+
+\subsection{Worker Vergleichsoperator (pathfinder.cpp)}
+\lstinputlisting[firstline=51, lastline=57]{../Quelltext/pathfinder.cpp}
+
+\subsection{Helfermethoden (pathfinder.cpp)}
+\lstinputlisting[firstline=80, lastline=107]{../Quelltext/pathfinder.cpp}
+
+\subsection{\texttt{findShortestPath} Methode (pathfinder.cpp)}
+\lstinputlisting[firstline=138, lastline=197]{../Quelltext/pathfinder.cpp}
+
+\subsection{\texttt{findFewestTurnPaths} Methode (pathfinder.cpp)}
+\lstinputlisting[firstline=199, lastline=267]{../Quelltext/pathfinder.cpp}
+
+\subsection{\texttt{parseFile} Methode (pathfinder.cpp)}
+\lstinputlisting[firstline=269, lastline=347]{../Quelltext/pathfinder.cpp}
+
+\subsection{Ausführen des Algorithmus (main.cpp)}
+Hier ist \texttt{pathCap} der eingelesene Parameter, welcher angibt, wieviel Pfade generiert werden sollen.
+Dieser ist, wenn nicht explizit gesetzt, auf 1 gesetzt.
+\lstinputlisting[firstline=83, lastline=99]{../Quelltext/main.cpp}
+
+\subsection{Ausgeben der Ergebnisse (main.cpp)}
+\lstinputlisting[firstline=143, lastline=175]{../Quelltext/main.cpp}
+
+\end{document}

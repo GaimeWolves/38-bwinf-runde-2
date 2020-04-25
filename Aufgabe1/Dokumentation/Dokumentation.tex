@@ -1,0 +1,1992 @@
+\documentclass[a4paper,10pt,ngerman]{scrartcl}
+\usepackage{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[a4paper,margin=2.5cm,footskip=0.5cm]{geometry}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{latexsym}
+\usepackage{eurosym}
+
+\usepackage{tikz}
+\usepackage{tkz-euclide}
+\usepackage{tikz-qtree}
+
+\usepackage{pgfplots}
+\pgfplotsset{width=6cm,compat=1.9}
+
+\usetikzlibrary{arrows, shapes.geometric, angles, quotes, calc, patterns, babel}
+
+% Die naechsten drei Felder bitte anpassen:
+\newcommand{\Aufgabe}{Aufgabe 1: Stromralley} % Aufgabennummer und Aufgabennamen angeben
+\newcommand{\TeilnahmeId}{9693}               % Teilnahme-Id angeben
+\newcommand{\Namen}{Nick Djerfi}              % Namen der Bearbeiter/-innen dieser Aufgabe angeben
+
+% Kopf- und Fußzeilen
+\usepackage{scrlayer-scrpage, lastpage}
+\setkomafont{pageheadfoot}{\large\textrm}
+\lohead{\Aufgabe}
+\rohead{Teilnahme-Id: \TeilnahmeId}
+\cfoot*{\thepage{}/\pageref{LastPage}}
+
+% Position des Titels
+\usepackage{titling}
+\setlength{\droptitle}{-1.0cm}
+
+% Für mathematische Befehle und Symbole
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Für Bilder
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{multirow}
+
+% Für Algorithmen
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tabularx}
+
+% Für Quelltext
+\usepackage{listings}
+\usepackage{color}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{myviolet}{rgb}{0.67,0.0,0.29}
+\lstset{
+  keywordstyle=\color{blue},commentstyle=\color{mygreen},
+  stringstyle=\color{mymauve},rulecolor=\color{black},
+  basicstyle=\footnotesize\ttfamily,numberstyle=\tiny\color{mygray},
+  captionpos=b, % sets the caption-position to bottom
+  keepspaces=true, % keeps spaces in text
+  numbers=left, numbersep=5pt, showspaces=false,showstringspaces=true,
+  showtabs=false, stepnumber=2, tabsize=2,
+  language=C++,
+  extendedchars=true,
+  literate={ä}{{\"a}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+}
+\lstdefinelanguage{JavaScript}{ % JavaScript ist als einzige Sprache noch nicht vordefiniert
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, finally, for, function, if, in, instanceof, new, return, switch, this, throw, try, typeof, var, void, while, with},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstdefinelanguage{bash}{
+  morekeywords={\$},
+  emph={time},
+  emphstyle={\color{myviolet}},
+  morestring=[b]',
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstset{
+  morekeywords={uint32_t, int32_t}
+}
+
+\lstset{emph={
+  std
+  },emphstyle={\color{myviolet}}
+}
+
+\newcommand{\abbref}[1]{
+  siehe Abb. \ref{#1}
+}
+
+\newcommand*\rfrac[2]{{}^{#1}\!/_{#2}}
+
+\newcommand{\STAB}[1]{\begin{tabular}{@{}c@{}}#1\end{tabular}}
+
+% Diese beiden Pakete müssen zuletzt geladen werden
+%\usepackage{hyperref} % Anklickbare Links im Dokument
+\usepackage{cleveref}
+
+% Daten für die Titelseite
+\title{\textbf{\Huge\Aufgabe}}
+\author{\LARGE Teilnahme-Id: \LARGE \TeilnahmeId \\\\
+	    \LARGE Bearbeiter/-in dieser Aufgabe: \\ 
+	    \LARGE \Namen\\\\}
+\date{\LARGE\today}
+
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Lösungsidee}
+Um Spielsituationen zu lösen wird ein Branch-and-Bound Bruteforce-Algorithmus angewendet,
+der mithilfe einer Heuristik und einer Bound-Bedingung in vielen Fällen schnell zu einer Lösung kommt.
+Eigene Spielsituationen werden generiert, indem zuerst, basierend auf den gewünschten Schwierigkeitsgrad,
+die Eigenschaften der Spielsituation festgelegt werden, und daraufhin die Spielsituation vom gelösten Zustand rückwarts
+in einen ungelösten Zustand ``gelöst wird''.
+
+\subsection{Branch-and-Bound Algorithmus}
+Der Algorithmus geht vom Startzustand alle Pfade ab, bis eine Lösung gefunden wurde.
+Dabei werden die einzelnen Pfade mittels einer Heuristik sortiert, damit Pfade, die zur Lösung führen können, zuerst bearbetet werden.
+Es gibt eine Bound-Kondition, die frühzeitig erkennt, ob ein Pfad überhaupt noch zur Lösung führen kann.
+So kommt der Algorithmus entweder schnell zu einer Lösung, oder kann schnell erkennen, dass die Spielsituation unlösbar ist.
+
+\subsection{Branch-Heuristik}
+Jedem Pfad wird eine Punktzahl zugeordnet, an dieser der Algorithmus die Pfade sortiert.
+Diese Punktzahl setzt sich aus der Summe der einzelnen Ladungen zusammen.
+So wird die Ladungssumme des Pfades von der Gesamtladung der Ausgangssituation abgezogen.
+Weiterhin wird dieser Wert so skaliert, dass auf vollen Spielfeldern mit einer hohen Batteriedichte diese Punktzahl niedriger wird.
+Von dieser Punktzahl wird ein zweiter Faktor abgezogen. Dieser Faktor besteht aus der Abweichung des Pfades von einem ``logischen'' Pfad.
+Dieser logische Pfad ist ein Pfad, der einmal durch alle Felder geht und, wenn möglich, zur Startposition zurückkehrt.
+An jedem Schritt wird von der vorherigen Position aus geprüft, wann die neue Position im logischen Pfad auftritt.
+Diese Abweichung wird dann vom skalierten Ladungswert abgezogen, sodass bei volleren Spielfeldern die Abweichung vom logischen Pfad stärker ins Gewicht fällt.
+Bei den Beispieldateien \texttt{stromralley1.txt} und \texttt{stromralley2.txt} wird ein logischer Pfad bevorzugt,
+während bei \texttt{stromralley5.txt} ein schneller Pfad, der schnell alle Batterien entlädt, bevorzugt wird.
+
+\subsubsection{Hamiltonkreise und Pfade}
+Der logische Pfad, der durch alle Felder geht ist ein Hamiltonpfad. Wenn dieser Pfad einen Kreislauf bildet nennt man ihn einen Hamiltonkreis.
+Solche Hamiltonpfade lassen sich relativ leicht auf quadratischen Graphen generieren.
+Sehr einfach ist es bei geraden Seitenlängen, also bei 10x10 Spielfeldern zum Beispiel,
+da der Pfad sich dort einfach von oben nach unten schlängeln muss. (\abbref{fig:evenhamilton})
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.6]
+    \foreach \x in {0.5,1.5,...,6.5} {
+      \draw [gray, thick] (\x,0.5) -- (\x,6.5);
+    }
+    \foreach \y in {0.5,1.5,...,6.5} {
+      \draw [gray, thick] (0.5,\y) -- (6.5,\y);
+    }
+
+    \draw[thick] (1,1) -- (6,1) -- (6,6) -- (5,6) -- (5,2) -- (4,2) -- (4,6) -- (3,6) -- (3,2) -- (2,2) -- (2,6) -- (1,6) -- (1,1);
+
+  \end{tikzpicture}
+  \caption{Hamiltonkreis bei geraden Spielfeldgrößen}
+  \label{fig:evenhamilton}
+\end{figure}
+
+Schwieriger ist es bei ungeraden Seitenlängen, da dort ein Hamiltonkreis unmöglich ist.
+Damit der Pfad möglichst logisch bleibt, muss das Ende des Pfades möglichst nah am Anfang sein.
+Dazu geht der Pfad zuerst zu einer der Ecken.
+Darauf schlängelt sich der Pfad ebenfalls hin und her, aber diesmal nur in den vier Quadranten um die Startposition herum.
+Wenn der Pfad über eine Kante tritt, wird die Richtung in die der Pfad geht um 90° gedreht.
+Dieser Algorithmus findet in fasst allen Fällen direkt den kompletten Hamiltonpfad.
+Nur in wenigen Fällen lässt der Algorithmus ein Feld frei. Dieses befindet sich aber immer an der Startposition und kann deshalb einfach hinzugefügt werden.
+(\abbref{fig:oddhamilton})
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.4]
+      \foreach \x in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,7.5);
+      }
+      \foreach \y in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (0.5,\y) -- (7.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,4) -- (8,4);
+      \draw [blue, dashed, thick] (4,0) -- (4,8);
+      \node [] at (4, 4) {\large \textbf{X}};
+
+      \draw [thick] (4,4) -- (4,7) -- (7,7) -- (7,6) -- (5,6) -- (5,5) -- (7,5) -- (7,4) -- (5,4) -- (5,3) -- (7,3);
+      \draw [thick] (7,3) -- (7,1) -- (6,1) -- (6,2) -- (5,2) -- (5,1) -- (4,1) -- (4,3) -- (3,3) -- (3,1);
+      \draw [thick] (3,1) -- (1,1) -- (1,2) -- (2,2) -- (2,3) -- (1,3) -- (1,4) -- (3,4) -- (3,5) -- (1,5);
+      \draw [thick, ->] (1,5) -- (1,7) -- (2,7) -- (2,6) -- (3,6) -- (3,7);
+      \draw [very thick, dashed] (3,7) -- (4,4);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.4]
+      \foreach \x in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,7.5);
+      }
+      \foreach \y in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (0.5,\y) -- (7.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,5) -- (8,5);
+      \draw [blue, dashed, thick] (5,0) -- (5,8);
+      \node [] at (5, 5) {\large \textbf{X}};
+
+      \draw [thick] (5,5) -- (5,7) -- (7,7) -- (7,6) -- (6,6) -- (6,5) -- (7,5);
+      \draw [thick] (7,5) -- (7,1) -- (6,1) -- (6,4) -- (5,4) -- (5,1);
+      \draw [thick] (5,1) -- (1,1) -- (1,2) -- (4,2) -- (4,3) -- (1,3) -- (1,4) -- (4,4) -- (4,5) -- (1,5);
+      \draw [thick, ->] (1,5) -- (1,7) -- (2,7) -- (2,6) -- (3,6) -- (3,7) -- (4,7) -- (4,6);
+      \draw [very thick, dashed] (4,6) -- (5,5);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.4]
+      \foreach \x in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,7.5);
+      }
+      \foreach \y in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (0.5,\y) -- (7.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (8,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,8);
+      \node [] at (3, 3) {\large \textbf{X}};
+
+      \draw [thick] (3,3) -- (3,1) -- (1,1) -- (1,2) -- (2,2) -- (2,3) -- (1,3);
+      \draw [thick] (1,3) -- (1,7) -- (2,7) -- (2,4) -- (3,4) -- (3,7);
+      \draw [thick] (3,7) -- (7,7) -- (7,6) -- (4,6) -- (4,5) -- (7,5) -- (7,4) -- (4,4) -- (4,3) -- (7,3);
+      \draw [thick, ->] (7,3) -- (7,1) -- (6,1) -- (6,2) -- (5,2) -- (5,1) -- (4,1) -- (4,2);
+      \draw [very thick, dashed] (4,2) -- (3,3);
+    \end{tikzpicture}
+    \caption{Die naheste mögli-\\che Ecke wird gewählt}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.4]
+      \foreach \x in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,7.5);
+      }
+      \foreach \y in {0.5,1.5,...,7.5} {
+        \draw [gray, thick] (0.5,\y) -- (7.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,7) -- (8,7);
+      \draw [blue, dashed, thick] (6,0) -- (6,8);
+
+      \node [draw, fill=red, circle] at (5, 7) {};
+      \draw [very thick, green, ->] (5,7) -- (6,7);
+
+      \node [] at (6, 7) {\large \textbf{X}};
+
+      \draw [thick] (6,7) -- (7,7) -- (7,1) -- (6,1) -- (6,6) -- (5,6) -- (5,1);
+      \draw [thick] (5,1) -- (1,1) -- (1,2) -- (4,2) -- (4,3) -- (1,3) -- (1,4);
+      \draw [thick, ->] (1,4) -- (4,4) -- (4,5) -- (1,5) -- (1,6) -- (4,6) -- (4,7) -- (1,7);
+    \end{tikzpicture}
+    \caption{Das fehlende Feld wird am Anfang angefügt}
+  \end{subfigure}%
+  \caption{Hamiltonpfade bei ungeraden Seitenlängen}
+  \label{fig:oddhamilton}
+\end{figure}
+
+In der folgenden Abbildung \ref{fig:hamiltondiff} sind einige Beispiele für die Abweichung vom Hamiltonpfad dargestellt.
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.8]
+    \foreach \x in {0.5,1.5,...,5.5} {
+      \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+    }
+    \foreach \y in {0.5,1.5,...,5.5} {
+      \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+    }
+
+    \draw [thick] (4,4) -- (4,5) -- (5,5) -- (5,1) -- (4,1) -- (4,3) -- (3,3) -- (3,1);
+    \draw [thick] (3,1) -- (1,1) -- (1,2) -- (2,2) -- (2,3) -- (1,3) -- (1,4) -- (3,4) -- (3,5) -- (1,5);
+
+    \draw [very thick, blue, dashed, ->] (4,4) -- node [below, sloped, pos=0.65] {\textbf{``1''}} (1,5);
+    \draw [very thick, blue, ->] (1,5) -- node [above] {\textbf{2}} (3,5);
+    \draw [very thick, blue, ->] (3,5) -- node [right] {\textbf{1}} (3,4);
+    \draw [very thick, blue, ->] (3,4) -- node [below] {\textbf{2}} (1.3,4);
+
+    \draw [very thick, red, ->] (4,4) -- node [right] {\textbf{1}} (4,5);
+    \draw [very thick, red, ->] (4,5) -- node [above] {\textbf{1}} (5,5);
+    \draw [very thick, red, ->] (5,5) -- node [right] {\textbf{4}} (5,1);
+    \draw [very thick, red, ->] (5,1) -- node [above] {\textbf{1}} (4,1);
+    \draw [very thick, red, ->] (4,1) -- node [right] {\textbf{2}} (4,3);
+    \draw [very thick, red, ->] (4,3) -- node [above] {\textbf{1}} (3,3);
+    \draw [very thick, red, ->] (3,3) -- node [right] {\textbf{2}} (3,1.3);
+
+    \node [] at (4, 4) {\huge \textbf{X}};
+    \node [fill=white!40!blue, circle, inner sep=0.2cm, label=center:\textbf{6}] at (1, 4) {};
+    \node [fill=white!30!red, circle, inner sep=0.2cm, label=center:\textbf{12}] at (3, 1) {};
+
+  \end{tikzpicture}
+  \caption{Abweichung vom Hamiltonpfad}
+  \label{fig:hamiltondiff}
+\end{figure}
+
+\subsection{Bound-Bedingung}
+Um unmögliche Spielsituationen frühzeitig zu erkennen, wird bei jedem Pfad überprüft, ob die Batterien in mehrere Gruppen unterteilt werden müssen.
+Eine Gruppe ist eine Ansammlung an Batterien, in denen jede Battere möglicherweise jede andere Batterie erreichen kann.
+Kann der Algorithmus nicht alle Batterien zusammen mit dem Roboter in eine Gruppe fassen, ist die Spielsituation nicht mehr lösbar,
+da es für den Roboter dann keinen Weg gibt zur anderen Gruppe zu gehen. Natürlich werden hier leere Batterien ignoriert, bzw. als ``Wände'' gesehen.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.5\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (1,4) -- node [above, sloped] {\textbf{3}} (3,3);
+      \draw [thick] (5,5) -- node [above, sloped] {\textbf{4}} (3,3);
+      \draw [thick] (3,1) -- node [above, sloped] {\textbf{2}} (3,3);
+
+      \node [bat, fill=green, label=center:\textbf{5}] at (3, 3) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (5, 5) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (3, 1) {};
+    \end{tikzpicture}
+    \caption{Eine große Gruppe}
+  \end{subfigure}%
+  \begin{subfigure} {0.5\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \filldraw [fill=purple] (0.5,2.5) rectangle (2.5,0.5);
+      \filldraw [fill=cyan] (3.5,5.5) rectangle (5.5,3.5);
+
+      \node [above] at (1.5, 2.5) {\scriptsize Gruppe 1};
+      \node [below] at (4.5, 3.5) {\scriptsize Gruppe 2};
+
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (2,2) -- node [above, sloped] {\textbf{4}} (4,4);
+
+      \node [bat, fill=green, label=center:\textbf{5}] at (1, 1) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (2, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (2, 1) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (5, 5) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (4, 5) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (4, 4) {};
+      \node [bat, fill=white, label=center:\textbf{2}] at (5, 4) {};
+    \end{tikzpicture}
+    \caption{Zwei kleine Gruppen}
+  \end{subfigure}%
+  \caption{Gruppierung von Batterien}
+  \label{fig:grouping}
+\end{figure}
+
+An sich führt dies aber zu falschen Ergebnissen, da man beachten muss, wenn Batterien mit höherer Ladung von anderen Batterien eingeschlossen sind.
+In Abbildung \ref{fig:groupingedgecase} würde der Algorithmus wie er gerade ist die Spielsituation als unlösbar einstufen,
+da die Batterie links von keiner der Batterien rechts erreichbar ist,
+weil der Roboter in der Mitte von diesen umschlossen ist und im Moment die Batterie links nicht direkt erreichen kann.
+Deshalb muss beim Gruppieren die maximale Ladung der einzelnen Gruppen zur Bestimmung, ob diese untereinander erreichbar sind, genommen werden.
+In der Abbildung ist die Maximalladung der Gruppe 9 und somit die Batterie links mit einer Distanz von 3 erreichbar.
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+    \filldraw [fill=purple] (3.5,2.5) rectangle (6.5,3.5);
+    \filldraw [fill=purple] (4.5,1.5) rectangle (5.5,4.5);
+    \filldraw [fill=purple] (0.5,2.5) rectangle (1.5,3.5);
+
+    \foreach \x in {0.5,1.5,...,6.5} {
+      \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+    }
+    \foreach \y in {0.5,1.5,...,5.5} {
+      \draw [gray, thick] (0.5,\y) -- (6.5,\y);
+    }
+
+    \draw [thick] (1,3) -- node [above, sloped] {\textbf{3}} (4,3);
+
+    \node [bat, fill=green, label=center:\textbf{9}] at (5, 3) {};
+
+    \node [bat, fill=white, label=center:\textbf{2}] at (5, 2) {};
+    \node [bat, fill=white, label=center:\textbf{2}] at (5, 4) {};
+    \node [bat, fill=white, label=center:\textbf{2}] at (6, 3) {};
+    \node [bat, fill=white, label=center:\textbf{2}] at (4, 3) {};
+    \node [bat, fill=white, label=center:\textbf{2}] at (1, 3) {};
+  \end{tikzpicture}
+  \caption{Edge-case}
+  \label{fig:groupingedgecase}
+\end{figure}
+
+\subsection{Generieren von Spielsituationen}
+Damit angemessene Spielsituationen erstellt werden können, muss zuerst definiert werden, was eine Spielsituation schwer macht.
+Aus diesem Schwierigkeitsgrad und der Spielfeldgröße lassen sich dann Spielfeldeigenschaften, wie die Anordnung der Batterien
+und die Länge des Lösungsweges generieren. Zuletzt wird, um die einzelnen Ladungen zu berechnen, die Spielsituation
+``rückwärts'' gelöst, indem von der Zielkonfiguration schrittweise ein zufälliger Pfad zur Ausgangssituation generiert wird.
+
+\subsubsection{Berechnung des Schwierigkeitsgrades}
+Der Schwierigkeitsgrad einer Spielsituation setzt sich aus der Batteriedichte, der Länge des Lösungsweges und der Spielfeldgröße zusammen.
+Der Bereich des Schwierigkeitsgrades geht von 0 bis 100 für ein 20x20 großes Spielfelder.
+
+Die Batteriedichte gibt an, wie dicht das Spielfeld mit Batterien voll ist. Eine Dichte von 1 bedeutet, das alle Felder mit Batterien voll sind,
+wie in den den Beispieldateien \texttt{stromralley1.txt} und \texttt{stromralley2.txt}. Eine Dichte von 0 dahingegen bedeutet, dass das Spielfeld
+keine einzige Batterie hat, wie in Beispieldatei \texttt{stromralley4.txt}. Generell sind Spielsituationen mit hoher Batteriedichte schwerer als
+mit niedriger Batteriedichte. Gefühlt werden Spielsituationen mit hoher Batteriedichte nicht viel schwerer wird, wenn eine Batterie hinzugefügt wird,
+während Spielsituationen mit niedriger Batteriedichte um einiges schwerer werden, wenn die Batterieanzahl erhöht wird.
+Somit lässt sich der Schwierigkeitsgrad durch ein begrenztes Wachstum darstellen, wobei die Schranke einen Schwierigkeitsgrad von 40 darstellt.
+(\abbref{fig:batterydensity})
+
+$$ D(d) = 40 - 40 * e^{-5 * d} $$
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      axis lines = left,
+      xlabel = $d$,
+      ylabel = {$D(d)$},
+    ]
+      \addplot[
+        domain=0:1,
+        color=blue
+        ]{40-(40*exp(-5*x))};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Schwierigkeitsgrad in Relation zur Batteriedichte}
+  \label{fig:batterydensity}
+\end{figure}
+
+Die Länge des Lösungsweges gibt an, wie viele Batterien besucht werden müssen um die Spielsituation zu lösen.
+Eine Länge von 1 bedeutet, dass alle Batterien im Schnitt einmal besucht werden müssen,
+wohingegen eine Länge von 2 bedeutet, dass alle Batterien im Schnitt zweimal besucht werden müssen.
+Da mit steigender Länge die Möglichkeiten exponentiell steigen, lässt sich der Schwierigkeitsgrad durch eine Exponentialfunktion darstellen.
+Bei einer Lösungslänge $< 1$ nimmt die Anzahl an Möglichkeiten rasch ab, da dann immer mehr Batterien eine Ladung von 0 haben.
+Diese Batterien wirken wie Wände für den Roboter und grenzen dessen Möglichkeiten weiter ein.
+Deshalb wird ein weiterer Term angehängt, damit bei einer Lösungslänge $< 1$ die Funktion schnell abfällt.
+(\abbref{fig:lengthfunction})
+
+\begin{align*}
+  L(l) &= (3^{l} - 1) * \frac{1}{l^{3} + 2}\\
+  L(l) &= \frac{3^{l} - 1}{l^{3} + 2}
+\end{align*}
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      axis lines = left,
+      xlabel = $l$,
+      ylabel = {$L(l)$},
+    ]
+      \addplot[
+        domain=0:5,
+        color=blue
+        ]{((3^x)-1)*(1/((x^3)+2))};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Schwierigkeitsgrad in Relation zur Lösungslänge}
+  \label{fig:lengthfunction}
+\end{figure}
+
+Einen Schwierigkeitsgrad erhält man aus der Kombination beider Funktionen. Dazu werden beide Funktionen miteinander multipliziert.
+(\abbref{fig:difffunctionnosize})
+
+\begin{align*}
+  DI(d,l) &= D(d) * L(l)\\
+  DI(d,l) &= (40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg)
+\end{align*}
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      axis lines = left,
+      xlabel = Dichte,
+      ylabel = Länge,
+      zlabel = Schwierigkeit,
+      view={315}{30}
+    ]
+      \addplot3 [
+        domain=0:1,
+        domain y=0:5.5,
+        surf,
+        ]{(40-(40*exp(-5*x)))*(((3^y)-1)*(1/((y^3)+2)))};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Schwierigkeitsgrad}
+  \label{fig:difffunctionnosize}
+\end{figure}
+
+Der Schwierigkeitsgrad nimmt quadratisch mit der Spielfeldgröße zu.
+Deshalb wird die Spielfeldgröße, zusammen mit der Batteriedichte und Lösungslänge, mit denn anderen beiden Funktionen addiert.
+(\abbref{fig:sizefundtion})
+
+\begin{align*}
+  f(n) &= \frac{n^{2}}{100}
+\end{align*}
+
+\begin{align*}
+  DI(d,l) &= (40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * d * l
+\end{align*}
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      axis lines = left,
+      xlabel = $n$,
+      ylabel = {$f(n)$},
+    ]
+      \addplot[
+        domain=5:20,
+        color=blue
+        ]{(x^2)/100};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Schwierigkeitsgrad in Relation zur Spielfeldgröße}
+  \label{fig:sizefundtion}
+\end{figure}
+
+\subsubsection{Herleitung der Spielfeldeigenschaften}
+Aus der Schwierigkeit und der Spielfeldgröße lässt sich nur schwer genau berechnen, welche Werte für die Batteriedichte und Lösungslänge möglich sind.
+Deshalb wird hier Gradient-Descent benutzt, um vom Mittelpunkt des Graphen bei $d = 0,5$ und $l = 2,5$ langsam zum gewünschten Schwierigkeitsgrad zu wandern.
+Für Gradient-Descent benötigt man die Ableitungsfunktionen in Relation zu den Unbekannten. (\abbref{fig:differentials})
+
+\begin{align*}
+  dD(d,l) &= \frac{\partial}{\partial d}\bigg(DI(d,l)\bigg)\\
+  &= \frac{\partial}{\partial d}\bigg((40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * d * l\bigg)\\
+  &= \frac{\partial}{\partial d}\bigg((40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg)\bigg) + \frac{\partial}{\partial d}\bigg(\frac{n^{2}}{100} * d * l\bigg)\\
+  &= \frac{\partial}{\partial d}\bigg(40 - 40 * e^{-5 * d}\bigg) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * l\\
+  &= 200 * e^{-5 * d} * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * l
+\end{align*}
+
+\begin{align*}
+  dL(d,l) &= \frac{\partial}{\partial l}\bigg(DI(d,l)\bigg)\\
+  &= \frac{\partial}{\partial l}\bigg((40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * d * l\bigg)\\
+  &= \frac{\partial}{\partial l}\bigg((40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg)\bigg) + \frac{\partial}{\partial l}\bigg(\frac{n^{2}}{100} * d * l\bigg)\\
+  &= (40 - 40 * e^{-5 * d}) * \frac{\partial}{\partial l}\bigg(\frac{3^{l} - 1}{l^{3} + 2}\bigg) + \frac{n^{2}}{100} * d\\
+  &= (40 - 40 * e^{-5 * d}) * \bigg(\frac{3^{x} \ln{(3)}}{x^{3} + 2} - \frac{3(3^{x} - 1)x^{2}}{(x^{3} + 2)^{2}}\bigg) + \frac{n^{2}}{100} * d\\
+\end{align*}
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.5\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        axis lines = left,
+        xlabel = Dichte,
+        ylabel = Länge,
+        zlabel = {$dD(d,l)$},
+      ]
+        \addplot3 [
+          domain=0:1,
+          domain y=0:5.5,
+          surf,
+          ]{(200*exp(-5*x))*(((3^y)-1)*(1/((y^3)+2)))+4*y};
+      \end{axis}
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.5\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        axis lines = left,
+        xlabel = Dichte,
+        ylabel = Länge,
+        zlabel = {$dL(d,l)$},
+        view={315}{30}
+      ]
+        \addplot3 [
+          domain=0:1,
+          domain y=0:5.5,
+          surf,
+          ]{(40-(40*exp(-5*x)))*((((3^y)*ln(3))/((y^3)+2))-((3*((3^y)-1)*(y^2))/(((y^3)+2)^2)))+4*x};
+      \end{axis}
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Ableitungsfunktionen}
+  \label{fig:differentials}
+\end{figure}
+
+Nun kann man sich die Eigenschaft zu nutze machen, dass der Schwierigkeitsgrad mit steigenden Werten kontinuierlich steigt.
+So muss man nur vergleichen, ob sich der gewünschte Schwierigkeitsgrad überhalb oder unterhalb des derzeitigen Schwierigkeitsgrades befindet.
+Ist die gewünschte Schwierigkeit größer als die derzeitige, addiert man die Änderungsrate der jeweiligen Ableitungsfunktionen zu der Batteriedichte und der Lösungslänge.
+Andernfalls subtrahiert man die Änderungsrate von den Eingaben. Die Änderungsraten werden mit einer kleinen Schrittgröße von etwa $0,0001$ bis $0,001$ multipliziert,
+damit der gewünschte Schwierigkeitsgrad nicht übersprungen wird. (\abbref{fig:gradientdescent})
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.5\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        axis lines = left,
+        xlabel = Dichte,
+        ylabel = Länge,
+        zlabel = Schwierigkeit,
+        view={315}{30}
+      ]
+        \addplot3 [
+          domain=0:1,
+          domain y=0:5.5,
+          surf,
+          ]{(40-(40*exp(-5*x)))*(((3^y)-1)*(1/((y^3)+2)))+4*x*y};
+
+        \node[fill, circle, inner sep=1.5pt, fill=red, pin=0:Start] at(axis cs:0.5,2.5,45.13) {};
+
+        \draw[->] (axis cs:0.50,2.50,45.13) -- (axis cs:0.52,2.62,46.71);
+        \draw[->] (axis cs:0.52,2.62,46.71) -- (axis cs:0.55,2.76,48.41);
+        \draw[->] (axis cs:0.55,2.76,48.41) -- (axis cs:0.58,2.92,50.30);
+        \draw[->] (axis cs:0.58,2.92,50.30) -- (axis cs:0.60,3.09,52.47);
+        \draw[->] (axis cs:0.60,3.09,52.47) -- (axis cs:0.63,3.29,55.08);
+        \draw[->] (axis cs:0.63,3.29,55.08) -- (axis cs:0.65,3.51,58.32);
+        \draw[->] (axis cs:0.65,3.51,58.32) -- (axis cs:0.68,3.77,62.55);
+        \draw[->] (axis cs:0.68,3.77,62.55) -- (axis cs:0.70,4.08,68.41);
+        \draw[->] (axis cs:0.70,4.08,68.41) -- (axis cs:0.72,4.46,77.27);
+        \draw[->] (axis cs:0.72,4.46,77.27) -- (axis cs:0.75,4.95,92.67);
+
+        \node[fill, circle, inner sep=1.5pt, fill=blue, pin=0:Ziel] at(axis cs:0.75,4.95,92.67) {};
+      \end{axis}
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure}{0.5\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        axis lines = left,
+        xlabel = Dichte,
+        ylabel = Länge,
+        zlabel = Schwierigkeit,
+        view={315}{30}
+      ]
+        \addplot3 [
+          domain=0:1,
+          domain y=0:5.5,
+          surf,
+          ]{(40-(40*exp(-5*x)))*(((3^y)-1)*(1/((y^3)+2)))+4*x*y};
+
+        \node[fill, circle, inner sep=1.5pt, fill=red, pin=0:Start] at(axis cs:0.5,2.5,45.13) {};
+
+        \draw[->] (axis cs:0.50,2.50,45.13) -- (axis cs:0.47,2.37,43.57);
+        \draw[->] (axis cs:0.47,2.37,43.57) -- (axis cs:0.44,2.26,42.03);
+        \draw[->] (axis cs:0.44,2.26,42.03) -- (axis cs:0.40,2.16,40.44);
+        \draw[->] (axis cs:0.40,2.16,40.44) -- (axis cs:0.37,2.07,38.67);
+        \draw[->] (axis cs:0.37,2.07,38.67) -- (axis cs:0.33,1.99,36.56);
+        \draw[->] (axis cs:0.33,1.99,36.56) -- (axis cs:0.29,1.91,33.83);
+        \draw[->] (axis cs:0.29,1.91,33.83) -- (axis cs:0.23,1.85,29.90);
+        \draw[->] (axis cs:0.23,1.85,29.90) -- (axis cs:0.15,1.80,23.34);
+        \draw[->] (axis cs:0.15,1.80,23.34) -- (axis cs:0.05,1.76,09.73);
+
+        \node[fill, circle, inner sep=1.5pt, fill=green, pin=0:Ziel] at(axis cs:0.05,1.76,09.73) {};
+      \end{axis}
+    \end{tikzpicture}
+  \end{subfigure}
+  \caption{Gradient-Descent}
+  \label{fig:gradientdescent}
+\end{figure}
+
+\subsubsection{Generieren der Spielsituation}
+Um aus diesen Informationen nun eine Spielsituation zu generieren, werden zuerst alle Batterien und die Start- und Zielposition zufällig auf dem Spielfeld verteilt.
+Daraufhin wird der Roboter auf die Zielposition mit einer Ladung von 0 gestellt. Dieser sucht sich zufällig eine der Batterien aus und fährt zu dieser.
+Dabei wird die Ladung des Roboters bei jedem Schritt um 1 erhöht.
+Kommt der Roboter auf ein Feld mit einer Batterie, wird wie im Spiel die Ladung des Roboters mit der Ladung der Batterie getauscht.
+Wenn der Weg zur Startposition länger wird als die gewünschte Lösungslänge, geht der Roboter den schnellsten Weg zur Startposition.
+Wenn der Roboter die Startposition erreicht hat, haben alle Batterien die richtige Ladung und der Roboter die richtige Position und Ladung.
+Zuletzt wird eine Datei für die Spielsituation erstellt. (\abbref{fig:generategame})
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.20\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (1,4) |- node [above, pos=0.5] {\textbf{2}} (2,5);
+
+      \node [circle, fill=green, label=center:\textbf{0}, minimum size=0.4cm] at (2, 5) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] at (5, 5) {};
+      \node [bat, fill=white, label=center:\textbf{0}] at (5, 2) {};
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.20\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \node [circle, fill=green, label=center:\textbf{1}, minimum size=0.4cm] at (1, 5) {};
+
+      \node at (1, 4) {\textbf{0}};
+      \node at (5, 5) {\textbf{0}};
+      \node at (5, 2) {\textbf{0}};
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.20\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \node [circle, fill=green, label=center:\textbf{0}, minimum size=0.4cm] at (1, 4) {};
+
+      %\node at (1, 4) {\textbf{0}};
+      \node at (5, 5) {\textbf{0}};
+      \node at (5, 2) {\textbf{0}};
+
+      \node [above] at (3,5.5) {\footnotesize Ladung der Batterie};
+      \draw [->, thick, blue] (1,5.8) -- (1,4.3);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.20\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (1,4) |- node [above, pos=0.63] {\textbf{6}} (5,2);
+
+      \node [bat, fill=green, label=center:\textbf{0}] at (5, 2) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] at (5, 5) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] at (5, 2) {};
+
+      \node [above] at (3,5.5) {\footnotesize Ladung des Roboters};
+      \draw [->, thick, blue] (1,5.8) -- (1,4.3);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.20\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (5,2) |- node [left, pos=0.25] {\textbf{3}} (5,5);
+
+      \node [circle, fill=green, label=center:\textbf{0}, minimum size=0.4cm] at (5, 5) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 4) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] at (5, 5) {};
+      \node [bat, fill=white, label=center:\textbf{6}] at (5, 2) {};
+    \end{tikzpicture}
+  \end{subfigure}\\
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (5,2) |- node [left, pos=0.25] {\textbf{3}} (5,5);
+
+      \node [circle, fill=green, label=center:\textbf{6}, minimum size=0.4cm] at (5, 2) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{3}] at (5, 5) {};
+      %\node [bat, fill=white, label=center:\textbf{2}] at (5, 2) {};
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.5, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [thick] (5,2) |- node [above, pos=0.75] {\textbf{3}} (3,1);
+
+      \node [circle, fill=green, label=center:\textbf{9}, minimum size=0.4cm] at (3, 1) {};
+
+      \node [bat, fill=white, label=center:\textbf{2}] at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{3}] at (5, 5) {};
+      \node [bat, fill=white, label=center:\textbf{3}] at (5, 2) {};
+    \end{tikzpicture}
+  \end{subfigure}%
+  \caption{Generieren einer Spielsituation}
+  \label{fig:generategame}
+\end{figure}
+
+\section{Umsetzung}
+
+\subsection{Übersetzten von Punkten zu Indizes}
+
+
+\subsection{Abstraktion des Spielfeldes}
+Das Spielfeld kann man als einen Graph sehen, bei dem die Batterien und der Roboter die Knoten sind und die Kanten die Pfade zwischen den Feldern speichern.
+Dies macht das Implementieren des Lösungs- und des Erstellungsalgorithmus einfacher, da der Roboter dann direkt von Batterie zu Batterie laufen kann.
+Am Ende kann aus dieser Liste an Zügen und den Pfaden zwischen den Batterien der komplette Pfad rekonstrutiert werden.
+Weiterhin wird dieser Graph in einer Adjazenzliste gespeichert, was das Abrufen des Pfades zwischen zwei Batterien vereinfacht.
+(\abbref{fig:abstraction})
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+    \foreach \x in {0.5,1.5,...,5.5} {
+      \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+    }
+    \foreach \y in {0.5,1.5,...,5.5} {
+      \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+    }
+
+    \coordinate (R) at (3,1);
+    \coordinate (B1) at (1,4);
+    \coordinate (B2) at (5,2);
+    \coordinate (B3) at (5,5);
+
+    \draw (B1) -- node [below, sloped]      {\textbf{6}} (B2);
+    \draw (B1) -- node [above, sloped]      {\textbf{5}} (B3);
+    \draw (B1) -- node [below, sloped]      {\textbf{5}} (R);
+    \draw (B2) -- node [right, xshift=-2pt] {\textbf{3}} (B3);
+    \draw (B2) -- node [below, sloped]      {\textbf{3}} (R);
+    \draw (B3) -- node [above, sloped]      {\textbf{6}} (R);
+
+    \node [bat, fill=green, label=center:\textbf{9}] at (R) {};
+
+    \node [bat, fill=white, label=center:\textbf{2}] at (B1) {};
+    \node [bat, fill=white, label=center:\textbf{3}] at (B2) {};
+    \node [bat, fill=white, label=center:\textbf{3}] at (B3) {};
+  \end{tikzpicture}
+  \caption{Abstraktion von \texttt{abbiegen0.txt}}
+  \label{fig:abstraction}
+\end{figure}
+
+\subsubsection{Schleifenpfade}
+Nun kann es aber auch nötig sein, dieselbe Batterie nochmal zu besuchen, um diese zu leeren und mit der alten Ladung weiterzufahren.
+Um die linke Batterie in Abbildung \ref{fig:bspselfreference} zu leeren muss der Roboter seine Ladung an dieser Batterie ablegen.
+Dadurch kann die Batterie geleert werden und die alte Ladung des Roboters wieder aufgenommen werden, mit der er zur Batterie rechts fahren kann.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,3.5);
+      }
+      \foreach \y in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \coordinate (R) at (4,2);
+      \coordinate (B1) at (1,2);
+      \coordinate (B2) at (5,2);
+
+      \node [bat, fill=green, label=center:\textbf{7}] (nodeR) at (R) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{1}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) -- node [above, sloped] {\textbf{3}} (nodeB1);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,3.5);
+      }
+      \foreach \y in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \coordinate (R) at (1,2);
+      \coordinate (B1) at (1,2);
+      \coordinate (B2) at (5,2);
+
+      \node [bat, fill=green, label=center:\textbf{2}] (nodeR) at (R) {};
+
+      %\node [bat, fill=white, label=center:\textbf{4}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{1}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) to [out=135,in=225,looseness=8] node [left] {\textbf{2}} (nodeR);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,3.5);
+      }
+      \foreach \y in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \coordinate (R) at (1,2);
+      \coordinate (B1) at (1,2);
+      \coordinate (B2) at (5,2);
+
+      \node [bat, fill=green, label=center:\textbf{4}] (nodeR) at (R) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{1}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) -- node [above, sloped] {\textbf{4}} (nodeB2);
+    \end{tikzpicture}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,3.5);
+      }
+      \foreach \y in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \coordinate (R) at (5,2);
+      \coordinate (B1) at (1,2);
+      \coordinate (B2) at (5,2);
+
+      \node [bat, fill=green, label=center:\textbf{1}] (nodeR) at (R) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (nodeB1) at (B1) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] (nodeB2) at (B2) {};
+    \end{tikzpicture}
+  \end{subfigure}%
+  \caption{Beispiel von Schleifen}
+  \label{fig:bspselfreference}
+\end{figure}
+
+\subsubsection{Längere Pfade}
+Letztlich muss, wenn der kürzeste Weg kürzer als vier Felder ist, auch ein verlängerbarer Pfad gespeichert werden.
+Ein verlängerbarer Pfad ist ein Pfad, auf dem der Roboter konstant hin und her fahren kann um eine größere Ladung zu entleeren.
+Damit dies möglich ist muss ein Pfad mit mindestens zwei freien Feldern, auf denen der Roboter hin und her fahren kann, gespeichert werden.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (3.5,\y);
+      }
+
+      \coordinate (R) at (2,1);
+      \coordinate (B1) at (2,2);
+      \coordinate (B2) at (2,5);
+
+      \node [bat, fill=green, label=center:\textbf{2}] (nodeR) at (R) {};
+      \node [bat, fill=white, label=center:\textbf{5}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{5}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) -- node[right] {\textbf{1}} (nodeB1);
+    \end{tikzpicture}
+    \caption{Der Roboter hinterlässt\\eine Ladung von 1}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (3.5,\y);
+      }
+
+      \coordinate (R) at (2,2);
+      \coordinate (B1) at (2,2);
+      \coordinate (B2) at (2,5);
+
+      \node [bat, fill=green, label=center:\textbf{5}] (nodeR) at (R) {};
+      %\node [bat, fill=white, label=center:\textbf{1}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{5}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) -- (3,2) -- node[xshift=-2pt, right] {\textbf{5}} (3,5) -- (nodeB2);
+      \draw [->, thick, red] (nodeR) -- node[xshift=2pt, left] {\textbf{3}} (nodeB2);
+    \end{tikzpicture}
+    \caption{Der rote kürzeste Pfad\\macht es unlösbar}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (3.5,\y);
+      }
+
+      \coordinate (R) at (2,5);
+      \coordinate (B1) at (2,2);
+      \coordinate (B2) at (2,5);
+
+      \node [bat, fill=green, label=center:\textbf{5}] (nodeR) at (R) {};
+      \node [bat, fill=white, label=center:\textbf{1}] (nodeB1) at (B1) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] (nodeB2) at (B2) {};
+
+      \draw [->, thick] (nodeR) -- (1,5) -- node[xshift=2pt, left] {\textbf{5}} (1,2) -- (nodeB1);
+      \draw [->, thick, red] (nodeR) -- node[xshift=2pt, left] {\textbf{3}} (nodeB1);
+    \end{tikzpicture}
+    \caption{Der rote kürzeste Pfad\\macht es wieder unlösbar}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,3.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (3.5,\y);
+      }
+
+      \coordinate (R) at (2,2);
+      \coordinate (B1) at (2,2);
+      \coordinate (B2) at (2,5);
+
+      \node [bat, fill=green, label=center:\textbf{1}] (nodeR) at (R) {};
+      %\node [bat, fill=white, label=center:\textbf{0}] (nodeB1) at (B1) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (nodeB2) at (B2) {};
+    \end{tikzpicture}
+    \caption{Alle Batterien sind\\geleert}
+  \end{subfigure}%
+  \caption{Beispiel von längeren Pfaden}
+  \label{fig:bsplongerpath}
+\end{figure}
+
+\subsubsection{Finden und speichern der Pfade}
+Diese Pfade werden mittels eines BFS-Algorithmus gesucht. Dabei kann angegeben werden, ob der Pfad zwingend verlängerbar sein muss.
+Ist der kürzeste Pfad schon verlängerbar kann dieser einfach dafür genommen werden, wenn nicht wird der BFS nochmals mit diesem Parameter ausgeführt.
+Andere Batterien werden hier als Wände gesehen, da ein freier Pfad zwischen den beiden Batterien gefragt ist.
+Wird nach einem verlängerbaren Pfad gesucht wird zuerst geprüft, ob sich die Zielbatterie in einer Raute um die Startbatterie befindet.
+Anhand der Position der Zielbatterie in der Raute können entsprechend ein bis zwei Kanten im Graph blockiert werden,
+damit der Algorithmus diese nicht begeht. (\abbref{fig:diamondconfig})
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [ultra thick, magenta]
+        (0.5,2.5) -- (1.5,2.5) -- (1.5,1.5) -- (2.5,1.5) -- (2.5,0.5) --
+        (3.5,0.5) -- (3.5,1.5) -- (4.5,1.5) -- (4.5,2.5) -- (5.5,2.5) --
+        (5.5,3.5) -- (4.5,3.5) -- (4.5,4.5) -- (3.5,4.5) -- (3.5,5.5) --
+        (2.5,5.5) -- (2.5,4.5) -- (1.5,4.5) -- (1.5,3.5) -- (0.5,3.5) -- (0.5,2.5);
+
+      \draw [ultra thick, red] (4.5,2.5) -- node {\textbf{X}} (4.5,3.5);
+
+      \coordinate (S) at (3,3);
+      \coordinate (G) at (5,3);
+
+      \node [bat, fill=green, label=center:\textbf{5}] (nodeS) at (S) {};
+      \node [bat, fill=orange, label=center:\textbf{5}] (nodeG) at (G) {};
+
+      \draw [ultra thick, ->] (nodeS) -- (3,4) -- (5,4) -- (nodeG);
+    \end{tikzpicture}
+    \caption{Eine blockierte Kante}
+  \end{subfigure}%
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [ultra thick, magenta]
+        (0.5,2.5) -- (1.5,2.5) -- (1.5,1.5) -- (2.5,1.5) -- (2.5,0.5) --
+        (3.5,0.5) -- (3.5,1.5) -- (4.5,1.5) -- (4.5,2.5) -- (5.5,2.5) --
+        (5.5,3.5) -- (4.5,3.5) -- (4.5,4.5) -- (3.5,4.5) -- (3.5,5.5) --
+        (2.5,5.5) -- (2.5,4.5) -- (1.5,4.5) -- (1.5,3.5) -- (0.5,3.5) -- (0.5,2.5);
+
+      \draw [ultra thick, red] (3.5,2.5) -- node {\textbf{X}} (3.5,3.5);
+
+      \coordinate (S) at (3,3);
+      \coordinate (G) at (4,3);
+
+      \node [bat, fill=green, label=center:\textbf{5}] (nodeS) at (S) {};
+      \node [bat, fill=orange, label=center:\textbf{5}] (nodeG) at (G) {};
+
+      \draw [ultra thick, ->] (nodeS) -- (3,4) -- (4,4) -- (nodeG);
+    \end{tikzpicture}
+    \caption{Eine blockierte Kante}
+  \end{subfigure}%
+  \begin{subfigure}{0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [ultra thick, magenta]
+        (0.5,2.5) -- (1.5,2.5) -- (1.5,1.5) -- (2.5,1.5) -- (2.5,0.5) --
+        (3.5,0.5) -- (3.5,1.5) -- (4.5,1.5) -- (4.5,2.5) -- (5.5,2.5) --
+        (5.5,3.5) -- (4.5,3.5) -- (4.5,4.5) -- (3.5,4.5) -- (3.5,5.5) --
+        (2.5,5.5) -- (2.5,4.5) -- (1.5,4.5) -- (1.5,3.5) -- (0.5,3.5) -- (0.5,2.5);
+
+      \draw [ultra thick, red] (3.5,3.5) -- node {\textbf{X}} (3.5,4.5);
+      \draw [ultra thick, red] (3.5,3.5) -- node {\textbf{X}} (4.5,3.5);
+
+      \coordinate (S) at (3,3);
+      \coordinate (G) at (4,4);
+
+      \node [bat, fill=green, label=center:\textbf{5}] (nodeS) at (S) {};
+      \node [bat, fill=orange, label=center:\textbf{5}] (nodeG) at (G) {};
+
+      \draw [ultra thick, ->] (nodeS) -- (3,5) -- (4,5) -- (nodeG);
+    \end{tikzpicture}
+    \caption{Zwei blockierte Kanten}
+  \end{subfigure}%
+  \caption{Rautenkonfigurationen}
+  \label{fig:diamondconfig}
+\end{figure}
+
+In einem Pfad Struct \texttt{path\_t} werden dann die jegliche Informationen und Pfade gespeichert.
+Am Ende erhält man eine Adjazenzliste, in der für jedes Batterienpaar ein solches Pfad Struct gespeichert ist.
+
+\lstinputlisting[frame=single, firstline=14, lastline=23]{../Quelltext/global.hpp}
+
+\subsection{Hamiltonkreise}
+Hier ist der Algorithmus für gerade Spielfeldgrößen wesentlich einfacher als der für ungerade Größen.
+Bei geraden Größen wird einfach über einige If-Abfragen getestet, in welche Richtung gegangen werden muss.
+So wird wenn der Roboter an der linken Wand ist immer nach unten gegangen.
+Ist der Roboter an der unteren Wand wird immer nach rechts gegangen.
+Ansonsten wird basierend darauf, ob die x-Koordinate gerade oder ungerade ist, nach oben oder nach unten gegangen
+und an der Wand bzw. kurz vor der Wand einmal nach links gegangen.
+
+Anders ist es bei ungeraden Spielfeldgrößen. Dort wird eine Blickrichtung bestimmt, in der sich der Roboter schlängelt.
+Tritt der Roboter über die Ursprungsachsen wird die Blickrichtung um 90° rotiert.
+Am Anfang geht der Roboter aber zuerst, wenn möglich, in die naheste Ecke in einer Weise, dass er sich dannach um 90° drehen kann.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \node [bat, fill=green] (nodeS) at (3,3) {};
+      \node [bat, draw, red, dashed, thick] (corner) at (5,5) {};
+      \draw [ultra thick, ->] (nodeS) -- (3,4);
+    \end{tikzpicture}
+    \caption{Geht zur oberen Wand}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black] (3,3) -- (3,5);
+
+      \node [bat, fill=green] (nodeS) at (3,5) {};
+      \node [bat, draw, red, dashed, thick] (corner) at (5,5) {};
+      \draw [ultra thick, ->] (nodeS) -- (4,5);
+    \end{tikzpicture}
+    \caption{Um 90° drehen}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black] (3,3) -- (3,5) -- (5,5);
+
+      \node [bat, fill=green] (nodeS) at (5,5) {};
+      \node [bat, draw, red, dashed, thick] (corner) at (5,5) {};
+      \draw [ultra thick, ->] (nodeS) -- (5,4);
+    \end{tikzpicture}
+    \caption{Geht zur Ecke}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,4) -- (6,4);
+      \draw [blue, dashed, thick] (5,0) -- (5,6);
+
+      \node [bat, fill=green] (nodeS) at (5,4) {};
+      \node [bat, draw, red, dashed, thick] (corner) at (5,5) {};
+      \draw [ultra thick, ->] (nodeS) -- (5,3);
+    \end{tikzpicture}
+    \caption{Spezialfall:\\Ecke unerreichbar}
+  \end{subfigure}%
+  \caption{Zur nahesten Ecke gehen}
+  \label{fig:gotocorner}
+\end{figure}
+
+Wenn die Ecke nun erreicht ist -- oder auch nicht -- schlängelt sich der Pfad solange hin und her, bis die blau gestrichelte Linie übertreten wird.
+Hierzu wird zusätzlich zur Blickrichtung noch die Orthogonale dazu gebildet.
+Der Roboter versucht solange die Orthogonale entlangzulaufen, bis kein Feld in dieser frei ist.
+Wenn kein Feld frei ist geht der Roboter einen Schritt in die Blickrichtung.
+Hat der Roboter die gestrichelte Linie übertreten und befindet sich an einer Wand kann die Blickrichtung wieder rotiert werden.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black]
+        (3,3) -- (3,5) -- (5,5) -- (5,4);
+
+      \coordinate (S) at (5,4);
+      \draw [ultra thick, ->] (S) -- ++(0,-1);
+      \draw [ultra thick, <->, magenta] (S)++(1,0) -- ++(-2,0);
+      \node [bat, fill=green] (nodeS) at (S) {};
+    \end{tikzpicture}
+    \caption{In Blickrichtung gehen}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black]
+        (3,3) -- (3,5) -- (5,5) -- (5,4) -- (4,4);
+
+      \coordinate (S) at (4,4);
+      \draw [ultra thick, ->] (S) -- ++(0,-1);
+      \draw [ultra thick, <->, magenta] (S)++(1,0) -- ++(-2,0);
+      \node [bat, fill=green] (nodeS) at (S) {};
+    \end{tikzpicture}
+    \caption{Die Orthogonale entlang}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black]
+        (3,3) -- (3,5) -- (5,5) -- (5,4) -- (4,4) -- (4,3);
+
+      \coordinate (S) at (4,3);
+      \draw [ultra thick, ->] (S) -- ++(0,-1);
+      \draw [ultra thick, <->, magenta] (S)++(1,0) -- ++(-2,0);
+      \node [bat, fill=green] (nodeS) at (S) {};
+    \end{tikzpicture}
+    \caption{In Blickrichtung gehen}
+  \end{subfigure}%
+  \begin{subfigure}{0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,5.5);
+      }
+      \foreach \y in {0.5,1.5,...,5.5} {
+        \draw [gray, thick] (0.5,\y) -- (5.5,\y);
+      }
+
+      \draw [blue, dashed, thick] (0,3) -- (6,3);
+      \draw [blue, dashed, thick] (3,0) -- (3,6);
+
+      \draw [ultra thick, gray!75!black]
+        (3,3) -- (3,5) -- (5,5) -- (5,4) -- (4,4) -- (4,3) -- (5,3);
+
+      \coordinate (S) at (5,3);
+      \draw [ultra thick, ->] (S) -- ++(-1,0);
+      \draw [ultra thick, <->, magenta] (S)++(0,1) -- ++(0,-2);
+      \node [bat, fill=green] (nodeS) at (S) {};
+    \end{tikzpicture}
+    \caption{Um 90° drehen}
+  \end{subfigure}%
+  \caption{Hin und her schlängeln}
+  \label{fig:snakearound}
+\end{figure}
+
+Dies wird solange wiederholt, bis alle Felder durchloffen wurden, oder der Algorithmus aus dem Spielfeld austritt.
+Der Algorithmus geht aus dem Spielfeld raus, wenn noch Felder fehlen.
+Es kann nämlich vorkommen, dass ein einziges Feld fehlt.
+Dieses befindet sich immer neben der Startposition und kann einfach am Anfang des Pfades angefügt werden.
+
+\subsubsection{Ring Datenstruktur}
+Dieser Hamiltonkreis wird in einer Doubly-Linked List gespeichert.
+Dabei verweist die erste Position auf die letzte, sodass ein Ring gebildet wird, der den Hamiltonkreis repräsentiert.
+Der Algorithmus speichert einen Zeiger auf eine der Nodes im Ring.
+Von dieser Node aus kann man nun andere Nodes suchen und deren Adresse zurückgeben.
+So wird der Ring ``rotiert'' indem der Zeiger einfach auf diese neue Node gesetzt wird.
+Weiterhin kann man die Distanz zwischen zwei Punkten im Ring berechnen,
+indem man zählt, wie viele Schritte benötigt werden, um den anderen Punkt zu erreichen.
+Man kann das Vorzeichen dieser Distanz bestimmen,
+indem man einmal den Ring in die eine Richtung untersucht mit dem Zeiger auf die nächste Node.
+Dies ist dann die positive Distanz.
+Die negative Distanz erhält man, indem man den Ring in der anderen Richtung untersucht mit dem Zeiger auf die vorherige Node.
+Zurückgegeben wird die Distanz mit dem kleineren Betrag.
+Dies wird in der Punktzahlberechnung der einzelnen Pfade verwendet, indem es eine ``Strafe'' dafür gibt,
+wenn sich das Vorzeichen des Pfades im nächsten Schritt umdreht.
+
+\subsection{Lösungsalgorithmus}
+Der Lösungsalgorithmus sucht zuerst mit dem Bruteforce-Algorithmus einen Lösungsweg auf dem abstrahierten Graphen.
+Aus diesen Zügen wird dannach die Folge an Schritten rekonstrutiert und zurückgegeben.
+
+\subsubsection{Gruppenüberprüfung}
+Zur Gruppenüberprüfung wird die Liste an Batterien durchiteriert.
+Für jede Batterie wird überprüft, ob diese zu einer der vorhandenen Gruppen gehört.
+Gehört die Batterie zu mehreren Gruppen werden diese zu einer Gruppe zusammengefasst.
+Zuletzt wird die Batterie zu der Gruppe hinzugefügt.
+Jede Gruppe speichert zusätzlich die Batterie mit der höchsten Ladung, da diese Ladung zum überprüfen verwendet wird.
+Am Ende wird zurückgeben, ob es mehr als eine große Gruppe gibt.
+
+\subsubsection{Bruteforce Algorithmus}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection{Worker Struct}
+Jeder der Pfade wird mit einem Worker Struct repräsentiert, dieses speichert die Zugfolge,
+die Punktzahl des Pfades und dessen Laufrichtung im Hamiltonkreis.
+Der Vergleichsoperator dieser Pfade vergleicht die Punktzahl, damit die Pfade in der Prioritätswarteschlange richtig sortiert werden.
+Zur Punktzahlberechnung wird zuerst die entladene Ladungsmenge berechnet und mit der Batteriedichte skaliert.
+
+\begin{lstlisting}[frame=single]
+score = (totalCharge - this->chargeSum) * (map.area / batteries.size());
+\end{lstlisting}
+
+Dannach wird die Abweichung vom Hamiltonkreis berechnet und, je nach dem ob ein Richtungswechsel stattfand,
+doppelt oder an sich von der Punktzahl angezogen.
+
+\begin{lstlisting}[frame=single]
+// Hamiltonkreis zur derzeitigen Position rotieren
+hamiltonCycle = hamiltonCycle->find(this->robot.position);
+
+// Abweichung zur letzten Position berechnen
+int signedDistance = hamiltonCycle->distance(this->path.back().position);
+int sign = sgn(signedDistance);
+
+// Fand ein Richtungswechsel statt?
+if (sign != prevDirection)
+{
+	// "Strafe" fuers umdrehen
+	signedDistance *= 2;
+	prevDirection = sign;
+}
+
+// Abweichung von der Punktzahl abziehen
+score -= std::abs(signedDistance);
+\end{lstlisting}
+
+\subsubsection{Rekonstruktion der Lösung}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsection{Generator-Algorithmus}
+Der Generator-Algorithmus berechnet zuerst aus den übergebenen Bedingungen die Spielfeldeigenschaften
+und konstruiert aus diesen dann eine Spielsituation.
+Die Bedingungen beinhalten die Spielfeldgröße, den Schwierigkeitsbereich und den möglichen Bereichen für die Batteriedichte und Lösungslänge.
+
+\subsubsection{Lösen der Bedingungen}
+Die Spielfeldeigenschaften, die zum gewünschten Schwierigkeitsgrad führen, werden iterativ über einen Gradient-Descent Algorithmus bestimmt.
+Hierzu werden die Eigenschaften mit den Mittelwerten der erlaubten Bereiche initialisiert.
+Dannach wird in jeder Iteration die Steigung in Bezug auf die Variablen berechnet.
+Je nach dem, ob sich die Zielschwierigkeit über oder unter der derzeitigen befindet,
+wird der Kehrwert der Steigung multipliziert mit der Schrittgröße addiert oder subtrahiert.
+Durch den Kehrwert werden auf flachen Gebieten der Schwierigkeitsgradfunktion größere Schritte, als bei steileren Gebieten gemacht,
+um den gewünschten Wert schnell zu erreichen und nicht zu überspringen.
+Wenn durch den Schritt eine der beiden Variablen aus dem erlaubten Bereich geht, wird der Schritt für diese Variable rückgängig gemacht.
+Dies hat den Effekt, dass sich der Punkt an der Grenze zum gewünschten Wert entlangbewegt. (\abbref{fig:gradientdescentboundary})
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      axis lines = left,
+      xlabel = Dichte,
+      ylabel = Länge,
+      zlabel = Schwierigkeit,
+      view={315}{30}
+    ]
+      \addplot3 [
+        domain=0:1,
+        domain y=0:5.5,
+        surf,
+        ]{(40-(40*exp(-5*x)))*(((3^y)-1)*(1/((y^3)+2)))+4*x*y};
+
+      \draw [thick, black]
+        (axis cs:0.0,3.5,00.00) -- (axis cs:0.1,3.5,16.98) --
+        (axis cs:0.2,3.5,28.57) -- (axis cs:0.3,3.5,35.96) --
+        (axis cs:0.4,3.5,40.88) -- (axis cs:0.5,3.5,44.53) --
+        (axis cs:0.6,3.5,47.16) -- (axis cs:0.7,3.5,49.43) --
+        (axis cs:0.8,3.5,51.12) -- (axis cs:0.9,3.5,52.88) --
+        (axis cs:1.0,3.5,54.46) -- (axis cs:1.0,4.0,64.08) --
+        (axis cs:1.0,4.5,77.34) -- (axis cs:0.9,4.5,75.31) --
+        (axis cs:0.8,4.5,72.93) -- (axis cs:0.7,4.5,70.60) --
+        (axis cs:0.6,4.5,67.52) -- (axis cs:0.5,4.5,63.93) --
+        (axis cs:0.4,4.5,58.92) -- (axis cs:0.3,4.5,51.62) --
+        (axis cs:0.2,4.5,41.57) -- (axis cs:0.1,4.5,24.48) --
+        (axis cs:0.0,4.5,00.00) -- (axis cs:0.0,3.5,00.00);
+
+      \draw [very thick, magenta]
+        (axis cs:0.50,4.00,52.49) -- (axis cs:0.48,3.95,50.80) --
+        (axis cs:0.45,3.90,48.94) -- (axis cs:0.43,3.84,46.98) --
+        (axis cs:0.41,3.78,45.15) -- (axis cs:0.39,3.72,43.36) --
+        (axis cs:0.37,3.65,41.45) -- (axis cs:0.35,3.58,39.56) --
+        (axis cs:0.33,3.50,37.57) -- (axis cs:0.31,3.50,36.47) --
+        (axis cs:0.29,3.50,35.28) -- (axis cs:0.27,3.50,33.99) --
+        (axis cs:0.26,3.50,33.31) -- (axis cs:0.25,3.50,32.60) --
+        (axis cs:0.24,3.50,31.86) -- (axis cs:0.23,3.50,31.09) --
+        (axis cs:0.22,3.50,30.29);
+
+      \node[fill, circle, inner sep=1.5pt, fill=red, label=135:\textbf{Start}] (S) at(axis cs:0.5,4.0,52.49) {};
+      \node[fill, circle, inner sep=1.5pt, fill=blue, label=-45:\textbf{Ziel}] (G) at(axis cs:0.22,3.50,30.29) {};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Gradient-Descent mit Grenzen}
+  \label{fig:gradientdescentboundary}
+\end{figure}
+
+\subsubsection{Konstruieren der Spielsituation}
+Mit diesen berechneten Eigenschaften kann man nun ein Spielfeld generieren.
+Dazu werden zu erst die Start- und Zielposition und die Batterien zufällig auf dem Spielfeld verteilt.
+Für diese Verteilung wird die abstrahierte Adjazenzliste generiert und gespeichert.
+Alle Ladungen sind zu Anfang mit 0 initialisiert und der Roboter befindet sich zu Anfang auf der Zielposition.
+(siehe \ref{fig:generate:start})
+Dannach wird, solange der Roboter sich nicht an der Startposition befindet, immer eine zufällige Batterie ausgewählt.
+Daraufhin wird ein Pfad zu dieser Batterie gesucht, der dann vom Roboter gegangen wird.
+Dazu wird ein BFS Algorithmus auf dem abstrahierten Graphen angewandt, der von Batterie zu Batterie geht um zur Zielbatterie zu gelangen.
+(siehe \ref{fig:generate:choose})
+Für jede Batterie wird dann per Zufall entweder der kürzeste Pfad, oder wenn möglich der verlängerbare Pfad genommen.
+(siehe \ref{fig:generate:longpath} u. \ref{fig:generate:shortpath})
+Zur Ladung des Roboters wird die Länge des Pfades addiert, da von der Zielsituation rückwärts gegangen wird.
+Zuletzt tauscht der Roboter seine Ladung mit der Batterie.
+(\ref{fig:generate:walklong} u. \ref{fig:generate:walkshort})
+Nach jeder Batterie wird die Lösungslänge um 1 verringert.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (2, 4) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B6) at (2, 1) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+    \end{tikzpicture}
+    \caption{Ausgangssituation}
+    \label{fig:generate:start}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (2, 4) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B6) at (2, 1) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+      \node [bat, draw, magenta, dashed, thick] (S) at (2, 1) {};
+      \node [bat, draw, blue, dashed, thick] (T1) at (B2) {};
+
+      \draw [->, thick] (R) -- (T1);
+      \draw [->, thick] (T1) -- (S);
+    \end{tikzpicture}
+    \caption{Batteriepfad gewählt}
+    \label{fig:generate:choose}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (2, 4) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B6) at (2, 1) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+      \node [bat, draw, magenta, dashed, thick] (S) at (2, 1) {};
+      \node [bat, draw, blue, dashed, thick] (T1) at (B2) {};
+
+      \draw [->, thick]
+        (R) -- ++(0.8,0) -- ++(0,-1) -- ++(0.2,0) -- ++(0,1) -- ++(0.2,0) -- ++(0,-1.2) -- ++(-0.2,0) -- (T1);
+    \end{tikzpicture}
+    \caption{Verlängerter Pfad gewählt}
+    \label{fig:generate:longpath}
+  \end{subfigure}\\
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (3, 2) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      %\node [bat, fill=white, label=center:\textbf{5}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B6) at (2, 1) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+      \node [bat, draw, magenta, dashed, thick] (S) at (2, 1) {};
+      \node [bat, draw, blue, dashed, thick] (T1) at (R) {};
+    \end{tikzpicture}
+    \caption{Pfad gegangen}
+    \label{fig:generate:walklong}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (3, 2) {};
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      %\node [bat, fill=white, label=center:\textbf{5}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B6) at (2, 1) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+      \node [bat, draw, magenta, dashed, thick] (S) at (2, 1) {};
+      \node [bat, draw, blue, dashed, thick] (T1) at (R) {};
+
+      \draw [->, thick] (T1) -- ++(-1,0) -- (S);
+    \end{tikzpicture}
+    \caption{Kürzesten Pfad gewählt}
+    \label{fig:generate:shortpath}
+  \end{subfigure}%
+  \begin{subfigure} {0.33\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=white, label=center:\textbf{0}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{5}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{0}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B6) at (2, 1) {};
+
+      \node [bat, fill=green, label=center:\textbf{0}] (R) at (B6) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+    \end{tikzpicture}
+    \caption{Pfad gegangen}
+    \label{fig:generate:walkshort}
+  \end{subfigure}%
+  \caption{Rückwärts lösen}
+  \label{fig:generate}
+\end{figure}
+
+Ist die Lösungslänge kleiner als der Weg zur Startposition geht der Roboter sofort diesen Weg zur Startposition.
+Damit die Batterien gleichmäßig geladen werden, wird für jede Batterie gezählt, wie oft diese besucht wurde.
+Bei der Wahl der nächsten Batterie wird dann die am wenigsten besuchte gewählt.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=white, label=center:\textbf{4}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{9}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B6) at (2, 1) {};
+
+      \node [bat, fill=green, label=center:\textbf{2}] (R) at (B4) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+    \end{tikzpicture}
+    \caption{Ausgangssituation}
+    \label{fig:finishgenerate:start}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=white, label=center:\textbf{4}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{9}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B6) at (2, 1) {};
+
+      \node [bat, fill=green, label=center:\textbf{2}] (R) at (B4) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+      \node [bat, draw, blue, dashed, thick] (T1) at (B6) {};
+
+      \draw [->, thick] (R) -- (T1);
+      \draw [->, thick] (T1) -- (G);
+    \end{tikzpicture}
+    \caption{Pfad zur Startposition}
+    \label{fig:finishgenerate:path}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=white, label=center:\textbf{4}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{9}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{4}] (B6) at (2, 1) {};
+
+      \node [bat, fill=green, label=center:\textbf{2}] (R) at (B6) {};
+
+      \node [bat, draw, red, dashed, thick] (G) at (4, 1) {};
+
+      \draw [->, thick] (R) -- (G);
+    \end{tikzpicture}
+    \caption{Gehe zur Batterie}
+    \label{fig:finishgenerate:battery}
+  \end{subfigure}%
+  \begin{subfigure} {0.25\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.6, bat/.style={circle, minimum size=0.4cm}]
+      \foreach \x in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (\x,0.5) -- (\x,4.5);
+      }
+      \foreach \y in {0.5,1.5,...,4.5} {
+        \draw [gray, thick] (0.5,\y) -- (4.5,\y);
+      }
+
+      \node [bat, fill=white, label=center:\textbf{4}] (B0) at (1, 4) {};
+      \node [bat, fill=white, label=center:\textbf{9}] (B1) at (4, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B2) at (3, 2) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B4) at (2, 3) {};
+      \node [bat, fill=white, label=center:\textbf{2}] (B5) at (1, 2) {};
+      \node [bat, fill=white, label=center:\textbf{4}] (B6) at (2, 1) {};
+
+      \node [bat, fill=green, label=center:\textbf{2}] (R) at (4,1) {};
+    \end{tikzpicture}
+    \caption{Gehe zum Start}
+    \label{fig:finishgenerate:goal}
+  \end{subfigure}%
+  \caption{Zur Startposition gehen}
+  \label{fig:finishgenerate}
+\end{figure}
+
+\subsection{Laufzeitanalyse}
+Der Lösungsalgorithmus ist vergleichbar mit einem A*-Algorithmus. Er benutzt eine Heuristik um einen Pfad auf einem Graphen zu finden.
+Dennoch ist die Laufzeitkomplexität des Algorithmus höher als die des A*-Algorithmus,
+da die Dynamik des Graphen keine zulässige Heuristik erlaubt und mehrfaches Besuchen von Knoten erfordert.
+Also kann davon ausgegangen werden dass die Komplexität größer ist als $O(b^{d})$, wo $b$ der Verzwigungsfaktor ist und $d$ die Länge des Lösungsweges.
+
+Die echte Laufzeit des Algorithmus kommt stark auf die Spielsituation an.
+In manchen Fällen terminiert der Algorithmus schon nach wenigen Millisekunden, in anderen kann es einige Minuten dauern.
+Generell steigt die Laufzeit exponentiell mit dem Schwierigkeitsgrad der Spielsituation an.
+Bei generierten Spielsituation mit einem Schwierigkeitsgrad von 0 bis etwa 35 terminiert der Algorithmus in unter einer Minute.
+Zwischen 35 und 45 schwankt die Laufzeit von Spielsituation zu Spielsituation. Bei höheren Schwierigkeitsgraden terminiert der Algorithmus erst nach vielen Minuten.
+In seltenen Fällen benötigt der Algorithmus selbts bei leichteren Spielsituationen mehrere Minuten. Dies geschieht eher bei großen Spielfeldern.
+Persönlich würde ich auch sagen, dass die Spielsituationen mit Schwierigkeitsgraden von über 40 für einen Menschen auch nahezu unmöglich werden.
+
+TODO: Tabelle für Lösungsalgorithmus
+
+Der Generator-Algorithmus hingegen braucht für größere Spielfelder quadratisch länger, da dadurch die Batterieanzahl und Lösungslänge quadratisch ansteigt.
+Mit höherem Schwierigkeitsgrad hingegen steigt die Batterieanzahl und Lösungslänge nur etwa linear im Bereich von 0 bis 100.
+Deshalb kann man von einer Laufzeitkomplexität von $O(d*n^2)$ ausgehen, wo $n$ die Spielfeldgröße und $d$ der Schwierigkeitsgrad ist.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{|c|r|c|c|c|c|c|c|}
+    \multicolumn{2}{c|}{\multirow{2}{*}{Zeit t [ms]}} & \multicolumn{6}{|c|}{Schwierigkeitsgrad} \\
+    \cline{3-8}
+    \multicolumn{2}{c|}{} & 10 & 20 & 30 & 50 & 75 & 100 \\
+    \hline
+    \parbox[t]{3mm}{\multirow{4}{*}{\rotatebox[origin=c]{90}{Feldgröße}}}
+    &   5x5 &  1 &    1 &    1 &    2 &    2 &    3 \\
+    & 10x10 &  2 &    3 &    6 &   10 &   21 &   23 \\
+    & 15x15 &  5 &   22 &   40 &   78 &  134 &  180 \\
+    & 20x20 & 19 &  101 &  224 &  452 & 1543 & 1904 \\
+    \hline
+  \end{tabular}
+  \caption{Zeiten für Generator-Algorithmus [Intel i7-6700 @ 3,40 GHz]}
+  \label{tab:difpathcount}
+\end{table}
+
+\subsection{Bedienung}
+Beide Algorithmen sind in einem Programm zusammengefasst.
+Dieses lässt sich über die Kommandozeile starten und gibt die Ergebnisse entweder auf der Konsole aus oder in einer Datei.
+
+\subsubsection{Eingabe}
+Zum Ausführen des Programm muss immer der Modus angegeben werden.
+Im Lösungsmodus ist die Datei die Eingabedatei deren Spielsituation gelöst werden soll.
+Im Generator-Modus ist die Datei die Ausgabedatei in der die generierte Spielsituation gespeichert werden soll.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./stromralley <Modus> <Datei>
+$ ./stromralley solve ../Beispiele/stromralley0.txt
+$ ./stromralley generate meinBeispiel.txt
+\end{lstlisting}
+
+Für den Generator-Modus können die Eigenschaften und Begrenzungen als Parameter angegeben werden.
+Ohne Parameter ist die Standardgröße ein 10x10 Spielfeld, auf dem die Eigenschaften zufällig gewählt werden.
+Hierbei kommt zuerst die Größe des Spielfeldes, dann der minimale und maximale Schwierigkeitsgrad,
+die minimale und maximale Batteriedichte und die minimale und maximale Lösungslänge.
+
+Das folgende Beispiel generiert eine Spielsituation mit einem 10x10 großen Spielfeld.
+Diese hat einen Schwierigkeitsgrad zwischen 15 und 30, eine Batteriedichte zwischen 0,2 und 0,5 und eine Lösungslänge von 0,5 bis 1,5.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./stromralley generate meinBeispiel.txt 10   15 30   0.2 0.5   0.5 1.5
+\end{lstlisting}
+
+Diese Werte können auch explizit angegeben werden, wenn man zum Beispiel nur die Batteriedichte bestimmen möchte.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{c|c|c|l}
+    kurz & lang & Beschreibung \\
+    \texttt{-s} & \texttt{-{}-size} & Spezifiziert die Spielfeldgröße \\
+
+    \texttt{-d} & \texttt{-{}-min-difficulty} & Spezifiziert den minimalen Schwierigkeitsgrad \\
+    \texttt{-D} & \texttt{-{}-max-difficulty} & Spezifiziert den maximalen Schwierigkeitsgrad \\
+
+    \texttt{-b} & \texttt{-{}-min-density} & Spezifiziert die minimale Batteriedichte \\
+    \texttt{-B} & \texttt{-{}-max-density} & Spezifiziert die maximale Batteriedichte \\
+
+    \texttt{-l} & \texttt{-{}-min-length} & Spezifiziert die minimale Lösungslänge \\
+    \texttt{-L} & \texttt{-{}-max-length} & Spezifiziert die maximale Lösungslänge \\
+  \end{tabular}
+\end{table}
+
+\subsubsection{Ausgabe}
+Im Lösungsmodus wird am Ende der Lösungsweg ausgegeben.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./stromralley solve ../Beispiele/stromralley0.txt
+Lösungsweg:
+(4|5) (5|5) (5|4) (5|3) (5|2) (5|1) (5|2) (5|3) (5|4) (4|4)
+(3|4) (2|4) (1|4) (1|3) (1|2) (1|3) (1|2)
+\end{lstlisting}
+
+Im Generator-Modus werden zuerst die Eigenschaften der Spielsituation ausgegeben.
+Daraufhin wird die Spielsituation auf der Konsole ausgegeben.
+Zuletzt wird ausgegeben, ob das Schreiben der Ausgabedatei erfolgreich war.
+
+\begin{lstlisting}[language=bash, numbers=none, frame=single]
+$ ./stromralley generate meinBeispiel.txt
+Eigenschaften der Spielsituation
+--------------------------------
+Schwierigkeitsgrad: 19.7235
+Batteriedichte    : 0.135726
+Lösungslänge      : 0.116054
+Anzahl Batterien  : 14
+
+Spielsitation:
+--------------
+10
+3,6,5
+14
+8,1,17
+1,2,8
+4,2,3
+9,2,5
+10,2,1
+5,3,6
+5,4,11
+2,5,4
+7,5,5
+4,6,0
+7,6,0
+10,8,0
+8,9,0
+2,10,0
+
+Datei wurde erfolgreich erstellt: meinBeispiel.txt
+\end{lstlisting}
+
+\section{Beispiele}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsection{Ergebnisse}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsection{Beispiel an \texttt{abbiegen0.txt}}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection{Spielfeldabstraktion}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection{Die Lösung finden}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsection{Beispiel der Erstellung von Spielsituationen}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection{Lösen der Bedingungen}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection{Konstruktion der Spielsituation}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\section{Quellcode}
+
+\end{document}
